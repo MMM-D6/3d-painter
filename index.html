@@ -2,32 +2,49 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>3D Painter</title>
 <style>
-html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#f0efeb;}
-*{box-sizing:border-box;-webkit-user-select:none;user-select:none;}
-#app{width:100vw;height:100vh;position:relative;background:#f0efeb;font-family:-apple-system,system-ui,sans-serif;}
-#cv{display:block;position:absolute;inset:0;cursor:crosshair;}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#f0efeb;touch-action:none;}
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+#app{position:fixed;inset:0;background:#f0efeb;font-family:-apple-system,system-ui,sans-serif;}
+#cv{display:block;position:absolute;inset:0;}
 
-#tleft{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:2px;background:rgba(255,255,255,0.96);border:0.5px solid rgba(0,0,0,0.1);border-radius:13px;padding:6px;z-index:100;}
-.btn{width:42px;height:42px;border-radius:9px;border:none;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;-webkit-tap-highlight-color:transparent;}
-.btn:active,.btn.on{background:rgba(0,0,0,0.11);}
-.btn svg{width:22px;height:22px;fill:none;stroke:rgba(0,0,0,0.65);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+/* LEFT TOOLBAR — two columns to save vertical space */
+#tl{position:absolute;top:12px;left:12px;display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  background:rgba(255,255,255,0.94);border:0.5px solid rgba(0,0,0,0.1);
+  border-radius:14px;padding:6px;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.08);width:96px;}
+.btn{width:42px;height:42px;border-radius:10px;border:none;background:transparent;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
+.btn:active,.btn.on{background:rgba(0,0,0,0.1);}
+.btn svg{width:22px;height:22px;fill:none;stroke:rgba(0,0,0,0.62);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
 .btn.on svg{stroke:#000;}
-.bl{font-size:9px;color:rgba(0,0,0,0.35);line-height:1;}
+.bl{font-size:8.5px;color:rgba(0,0,0,0.32);line-height:1;white-space:nowrap;}
 .btn.on .bl{color:rgba(0,0,0,0.6);}
-.sep{width:28px;height:0.5px;background:rgba(0,0,0,0.1);margin:2px auto;}
+/* full-width items span both cols */
+.btn.full{grid-column:span 2;width:100%;}
+.sep{grid-column:span 2;height:.5px;background:rgba(0,0,0,0.08);margin:2px 4px;}
 
-#tright{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:5px;background:rgba(255,255,255,0.96);border:0.5px solid rgba(0,0,0,0.1);border-radius:13px;padding:7px;z-index:100;}
-.cs{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;-webkit-tap-highlight-color:transparent;}
+/* COLOR PANEL RIGHT */
+#tr{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:5px;
+  background:rgba(255,255,255,0.94);border:0.5px solid rgba(0,0,0,0.1);
+  border-radius:14px;padding:7px;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.cs{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;display:block;flex-shrink:0;}
 .cs.on{border-color:#111;}
-#cw{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.18);background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);cursor:pointer;position:relative;}
-#ci{position:absolute;opacity:0;width:0;height:0;pointer-events:none;}
+#cwrap{width:28px;height:28px;position:relative;flex-shrink:0;}
+#cwdiv{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.18);
+  background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);display:block;}
+#cwdiv.on{border-color:#111;border-width:2.5px;}
+#ci{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0;}
 
-#navcube{position:absolute;top:14px;right:58px;z-index:100;width:68px;height:68px;perspective:150px;cursor:grab;}
+/* NAV CUBE */
+#navcube{position:absolute;top:12px;right:58px;z-index:50;width:68px;height:68px;perspective:150px;cursor:grab;}
 #cube{width:36px;height:36px;position:relative;transform-style:preserve-3d;margin:16px auto;pointer-events:none;}
-.fc{position:absolute;width:36px;height:36px;border:1px solid rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border-radius:2px;pointer-events:all;cursor:pointer;}
+.fc{position:absolute;width:36px;height:36px;border:1px solid rgba(0,0,0,0.18);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
+  border-radius:2px;pointer-events:all;cursor:pointer;}
 .fc span{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
 .fc.fr{background:rgba(74,143,212,.85);transform:translateZ(18px);}
 .fc.bk{background:rgba(100,100,130,.85);transform:rotateY(180deg) translateZ(18px);}
@@ -36,34 +53,102 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
 .fc.tp{background:rgba(80,160,80,.85);transform:rotateX(90deg) translateZ(18px);}
 .fc.bt{background:rgba(138,80,80,.85);transform:rotateX(-90deg) translateZ(18px);}
 
-#symp{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.97);border:0.5px solid rgba(0,0,0,0.1);border-radius:11px;padding:5px 7px;display:none;gap:4px;z-index:100;white-space:nowrap;}
+/* LAYER PANEL — slides out from left below toolbar */
+#lp{position:absolute;top:12px;left:110px;width:185px;
+  background:rgba(255,255,255,0.97);border:0.5px solid rgba(0,0,0,0.12);
+  border-radius:14px;padding:10px;z-index:60;display:none;
+  box-shadow:0 4px 20px rgba(0,0,0,0.12);max-height:calc(100vh - 30px);overflow-y:auto;}
+#lp.open{display:block;}
+.lp-title{font-size:10px;color:rgba(0,0,0,0.35);font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:8px;}
+.layer-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:8px;cursor:pointer;}
+.layer-item:hover{background:rgba(0,0,0,0.04);}
+.layer-item.cur{background:rgba(0,0,0,0.08);}
+.l-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.l-name{font-size:12px;color:rgba(0,0,0,0.7);flex:1;}
+.l-eye{width:20px;height:20px;border:none;background:transparent;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
+.l-eye svg{width:14px;height:14px;fill:none;stroke:rgba(0,0,0,0.4);stroke-width:1.5;stroke-linecap:round;}
+.l-eye.off svg{stroke:rgba(0,0,0,0.18);}
+.l-del{width:20px;height:20px;border:none;background:transparent;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
+.l-del svg{width:13px;height:13px;fill:none;stroke:rgba(200,60,50,0.45);stroke-width:1.6;stroke-linecap:round;}
+.l-add{display:flex;align-items:center;gap:6px;padding:5px 6px;margin-top:5px;
+  border-top:.5px solid rgba(0,0,0,0.07);cursor:pointer;border-radius:8px;}
+.l-add:hover{background:rgba(0,0,0,0.04);}
+.l-add span{font-size:12px;color:rgba(0,0,0,0.4);}
+
+/* SYM PANEL */
+#symp{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.97);border:0.5px solid rgba(0,0,0,0.1);
+  border-radius:11px;padding:5px 7px;display:none;gap:4px;z-index:60;white-space:nowrap;}
 #symp.open{display:flex;}
-.sb{height:26px;padding:0 8px;border-radius:6px;border:0.5px solid rgba(0,0,0,0.15);background:transparent;font-size:11px;font-weight:600;color:rgba(0,0,0,0.5);cursor:pointer;}
+.sb{height:26px;padding:0 8px;border-radius:6px;border:.5px solid rgba(0,0,0,0.14);
+  background:transparent;font-size:11px;font-weight:600;color:rgba(0,0,0,0.48);cursor:pointer;}
 .sb.on{background:#1a1a1a;color:#fff;}
 
-#hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.9);border:0.5px solid rgba(0,0,0,0.1);border-radius:7px;padding:3px 10px;font-size:11px;color:rgba(0,0,0,0.45);z-index:10;white-space:nowrap;pointer-events:none;}
+/* POLISH PANEL */
+#pp{position:absolute;left:110px;background:rgba(255,255,255,0.97);
+  border:0.5px solid rgba(0,0,0,0.12);border-radius:14px;padding:12px;
+  z-index:60;display:none;width:220px;box-shadow:0 4px 20px rgba(0,0,0,0.12);}
+#pp.open{display:block;}
+.pp-title{font-size:10px;color:rgba(0,0,0,0.35);font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:10px;}
+.pp-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.pp-label{font-size:11px;color:rgba(0,0,0,0.5);flex-shrink:0;width:62px;}
+.pp-val{font-size:11px;font-weight:700;color:rgba(0,0,0,0.7);min-width:24px;text-align:right;flex-shrink:0;}
+input.pp-sl{flex:1;height:20px;-webkit-appearance:none;appearance:none;background:transparent;border:none;outline:none;}
+input.pp-sl::-webkit-slider-runnable-track{height:4px;background:rgba(0,0,0,0.13);border-radius:4px;}
+input.pp-sl::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#1a1a1a;cursor:pointer;margin-top:-7px;}
+#pp-apply{width:100%;margin-top:4px;padding:8px;border-radius:9px;border:none;
+  background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
+#pp-apply:active{opacity:0.8;}
+#pp-note{font-size:10px;color:rgba(0,0,0,0.35);margin-top:8px;line-height:1.4;}
 
-#bbar{position:absolute;bottom:10px;left:58px;right:50px;background:rgba(255,255,255,0.97);border:0.5px solid rgba(0,0,0,0.12);border-radius:16px;padding:8px 14px;display:flex;flex-direction:column;gap:6px;z-index:100;}
+/* HUD */
+#hud{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.88);border:.5px solid rgba(0,0,0,0.1);
+  border-radius:7px;padding:3px 10px;font-size:11px;color:rgba(0,0,0,0.42);
+  z-index:10;white-space:nowrap;pointer-events:none;}
+
+/* BOTTOM BAR */
+#bb{position:absolute;bottom:12px;left:140px;right:12px;
+  background:rgba(255,255,255,0.97);border:.5px solid rgba(0,0,0,0.12);
+  border-radius:16px;padding:8px 14px;display:flex;flex-direction:column;
+  gap:6px;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
 .row{display:flex;align-items:center;gap:8px;}
-.rl{font-size:10px;color:rgba(0,0,0,0.38);font-weight:600;flex-shrink:0;width:44px;text-align:right;pointer-events:none;}
-.rv{font-size:11px;font-weight:700;color:rgba(0,0,0,0.7);min-width:30px;text-align:right;flex-shrink:0;pointer-events:none;}
-.rdiv{width:0.5px;height:16px;background:rgba(0,0,0,0.1);flex-shrink:0;}
-input[type=range]{flex:1;min-width:0;height:20px;-webkit-appearance:none;appearance:none;background:transparent;border:none;outline:none;cursor:pointer;touch-action:none;}
-input[type=range]::-webkit-slider-runnable-track{height:4px;background:rgba(0,0,0,0.14);border-radius:4px;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#1a1a1a;cursor:pointer;margin-top:-8px;}
-input[type=range]::-moz-range-track{height:4px;background:rgba(0,0,0,0.14);border-radius:4px;}
-input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#1a1a1a;cursor:pointer;border:none;}
+.rl{font-size:10px;color:rgba(0,0,0,0.35);font-weight:600;flex-shrink:0;width:44px;text-align:right;}
+.rv{font-size:11px;font-weight:700;color:rgba(0,0,0,0.68);min-width:30px;text-align:right;flex-shrink:0;}
+.rdiv{width:.5px;height:16px;background:rgba(0,0,0,0.1);flex-shrink:0;}
+input[type=range]{flex:1;min-width:0;height:20px;-webkit-appearance:none;appearance:none;
+  background:transparent;border:none;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:rgba(0,0,0,0.13);border-radius:4px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;
+  border-radius:50%;background:#1a1a1a;cursor:pointer;margin-top:-8px;}
 
-#toast{position:absolute;bottom:88px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.88);color:#fff;border-radius:8px;padding:5px 13px;font-size:12px;display:none;z-index:200;pointer-events:none;}
+/* GESTURE ZONE bottom-left */
+#gz{position:absolute;bottom:12px;left:12px;width:118px;height:118px;z-index:50;
+  border-radius:20px;background:rgba(255,255,255,0.14);
+  border:.5px solid rgba(0,0,0,0.07);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
+#gz.active{background:rgba(255,255,255,0.55);border-color:rgba(0,0,0,0.14);}
+#gz svg{width:50px;height:50px;opacity:0.2;transition:opacity .15s;}
+#gz.active svg{opacity:0.48;}
+#gz-lb{font-size:9px;color:rgba(0,0,0,0.25);letter-spacing:.05em;text-transform:uppercase;}
+#gz-h{font-size:8px;color:rgba(0,0,0,0.16);}
+
+#toast{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);
+  background:rgba(20,20,20,.88);color:#fff;border-radius:8px;
+  padding:5px 13px;font-size:12px;display:none;z-index:200;pointer-events:none;}
 </style>
 </head>
 <body>
 <div id="app">
 <canvas id="cv"></canvas>
-<div id="hud">Tool: <b id="htool">Pen</b> | Z: <b id="hZ">0</b></div>
+<div id="hud">Tool: <b id="htool">Pen</b> | Layer: <b id="hlayer">Layer 1</b> | Z: <b id="hZ">0</b></div>
 
 <div id="symp">
-  <button class="sb" data-n="0">Off</button>
+  <button class="sb on" data-n="0">Off</button>
   <button class="sb" data-n="2">2-way</button>
   <button class="sb" data-n="3">3-way</button>
   <button class="sb" data-n="4">4-way</button>
@@ -72,22 +157,63 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 <div id="toast"></div>
 
-<div id="tleft">
-  <button class="btn on" id="bpen" data-t="pen"><svg viewBox="0 0 22 22"><path d="M4 18L8 14L16 6L18 4L16 6L8 14"/><path d="M4 18L6.5 12L10 15.5Z"/></svg><span class="bl">Pen</span></button>
-  <button class="btn" id="bneon" data-t="neon"><svg viewBox="0 0 22 22"><ellipse cx="11" cy="11" rx="7" ry="4.5"/><circle cx="11" cy="11" r="2.2"/><line x1="11" y1="3.5" x2="11" y2="6.5"/><line x1="11" y1="15.5" x2="11" y2="18.5"/></svg><span class="bl">Neon</span></button>
-  <button class="btn" id="bmarker" data-t="marker"><svg viewBox="0 0 22 22"><rect x="3" y="9.5" width="13" height="5.5" rx="2.8"/><path d="M14 12.2L19 10"/></svg><span class="bl">Marker</span></button>
-  <button class="btn" id="bink" data-t="ink"><svg viewBox="0 0 22 22"><path d="M5.5 17C6.5 12 10 8.5 13 7.5C16 6.5 19 8 19 8C16 9 14 12.5 12 15.5"/><ellipse cx="7" cy="16" rx="1.8" ry="1.9"/></svg><span class="bl">Ink</span></button>
-  <div class="sep"></div>
-  <button class="btn" id="berase" data-t="erase"><svg viewBox="0 0 22 22"><path d="M7.5 18L3 18L7 13L14.5 5.5L20 11L12 19"/><line x1="10.5" y1="7" x2="16" y2="12.5"/></svg><span class="bl">Eraser</span></button>
-  <button class="btn" id="bsym" data-t="sym"><svg viewBox="0 0 22 22"><line x1="11" y1="3" x2="11" y2="19"/><polyline points="4,8 8,11 4,14"/><polyline points="18,8 14,11 18,14"/></svg><span class="bl">Sym</span></button>
-  <button class="btn" id="borbit" data-t="orbit"><svg viewBox="0 0 22 22"><path d="M4 11C4 7.1 7.1 4 11 4C13.3 4 15.2 5 16.5 6.6"/><path d="M16.2 4.2L16.5 6.6L14.2 7.3"/><path d="M18 11C18 14.9 14.9 18 11 18C8.7 18 6.8 17 5.5 15.4"/></svg><span class="bl">Orbit</span></button>
-  <div class="sep"></div>
-  <button class="btn" id="bundo"><svg viewBox="0 0 22 22"><path d="M3.5 8.5H13C15.5 8.5 17.5 10.5 17.5 13C17.5 15.5 15.5 17.5 13 17.5H8.5"/><path d="M8.5 5.5L3.5 8.5L8.5 11.5"/></svg><span class="bl">Undo</span></button>
-  <button class="btn" id="bsave"><svg viewBox="0 0 22 22"><rect x="3" y="3" width="16" height="16" rx="2.5"/><path d="M7 3V8.5H15V3"/><rect x="13" y="3" width="3.5" height="4.5"/><rect x="6" y="12" width="10" height="6" rx="1"/></svg><span class="bl">Save</span></button>
-  <button class="btn" id="bload"><svg viewBox="0 0 22 22"><path d="M11 15V5.5"/><path d="M6.5 10.5L11 5.5L15.5 10.5"/><line x1="4" y1="18" x2="18" y2="18"/></svg><span class="bl">Load</span></button>
-  <button class="btn" id="bclr"><svg viewBox="0 0 22 22"><path d="M5 17L17 5M17 17L5 5" stroke="rgba(200,55,45,0.8)"/></svg><span class="bl">Clear</span></button>
+<!-- LAYER PANEL -->
+<div id="lp">
+  <div class="lp-title">Layers</div>
+  <div id="layer-list"></div>
+  <div class="l-add" id="ladd">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="1.6" stroke-linecap="round"><path d="M7 2V12M2 7H12"/></svg>
+    <span>New Layer</span>
+  </div>
 </div>
 
+<!-- POLISH PANEL -->
+<div id="pp">
+  <div class="pp-title">Polish Strokes</div>
+  <div class="pp-row">
+    <span class="pp-label">Strength</span>
+    <input type="range" class="pp-sl" id="pp-str" min="1" max="10" value="3" step="1">
+    <span class="pp-val" id="pp-str-v">3</span>
+  </div>
+  <div class="pp-row">
+    <span class="pp-label">Scope</span>
+    <select id="pp-scope" style="flex:1;height:28px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.15);background:#fff;font-size:12px;padding:0 6px;">
+      <option value="active">Active layer</option>
+      <option value="all">All layers</option>
+    </select>
+  </div>
+  <button id="pp-apply">Apply Polish</button>
+  <div id="pp-note">Smooths all stroke paths using Laplacian relaxation. Cannot be undone per stroke — use Undo after.</div>
+</div>
+
+<!-- LEFT TOOLBAR — 2-column grid -->
+<div id="tl">
+  <!-- Row 1: brushes -->
+  <button class="btn on" id="bpen" data-t="pen"><svg viewBox="0 0 22 22"><path d="M4 18L8 14L16 6L18 4L16 6L8 14"/><path d="M4 18L6.5 12L10 15.5Z"/></svg><span class="bl">Pen</span></button>
+  <button class="btn" id="bneon" data-t="neon"><svg viewBox="0 0 22 22"><ellipse cx="11" cy="11" rx="7" ry="4.5"/><circle cx="11" cy="11" r="2.2"/></svg><span class="bl">Neon</span></button>
+  <button class="btn" id="bmarker" data-t="marker"><svg viewBox="0 0 22 22"><rect x="3" y="9.5" width="13" height="5.5" rx="2.8"/><path d="M14 12.2L19 10"/></svg><span class="bl">Marker</span></button>
+  <button class="btn" id="bink" data-t="ink"><svg viewBox="0 0 22 22"><path d="M5.5 17C6.5 12 10 8.5 13 7.5C16 6.5 19 8 19 8C16 9 14 12.5 12 15.5"/><ellipse cx="7" cy="16" rx="1.8" ry="1.9"/></svg><span class="bl">Ink</span></button>
+  <!-- separator -->
+  <div class="sep"></div>
+  <!-- Row 2: modes -->
+  <button class="btn" id="berase" data-t="erase"><svg viewBox="0 0 22 22"><path d="M7.5 18L3 18L7 13L14.5 5.5L20 11L12 19"/><line x1="10.5" y1="7" x2="16" y2="12.5"/></svg><span class="bl">Eraser</span></button>
+  <button class="btn" id="bsym"><svg viewBox="0 0 22 22"><line x1="11" y1="3" x2="11" y2="19"/><polyline points="4,8 8,11 4,14"/><polyline points="18,8 14,11 18,14"/></svg><span class="bl">Sym</span></button>
+  <button class="btn" id="borbit" data-t="orbit"><svg viewBox="0 0 22 22"><path d="M4 11C4 7.1 7.1 4 11 4C13.3 4 15.2 5 16.5 6.6"/><path d="M16.2 4.2L16.5 6.6L14.2 7.3"/><path d="M18 11C18 14.9 14.9 18 11 18C8.7 18 6.8 17 5.5 15.4"/></svg><span class="bl">Orbit</span></button>
+  <button class="btn" id="blayer"><svg viewBox="0 0 22 22"><path d="M3 7L11 4L19 7L11 10L3 7Z"/><path d="M3 12L11 15L19 12"/><path d="M3 17L11 20L19 17"/></svg><span class="bl">Layers</span></button>
+  <!-- separator -->
+  <div class="sep"></div>
+  <!-- Polish — full width -->
+  <button class="btn full" id="bpolish"><svg viewBox="0 0 22 22"><path d="M5 17C5 17 7 11 11 9C15 7 17 9 17 9C14 10 12 13 10 16"/><path d="M8 14C9 12 11 11 13 11"/><circle cx="6" cy="16" r="1.5" fill="rgba(0,0,0,0.5)" stroke="none"/></svg><span class="bl">Polish Strokes</span></button>
+  <!-- separator -->
+  <div class="sep"></div>
+  <!-- Actions -->
+  <button class="btn" id="bundo"><svg viewBox="0 0 22 22"><path d="M3.5 8.5H13C15.5 8.5 17.5 10.5 17.5 13C17.5 15.5 15.5 17.5 13 17.5H8.5"/><path d="M8.5 5.5L3.5 8.5L8.5 11.5"/></svg><span class="bl">Undo</span></button>
+  <button class="btn" id="bclr"><svg viewBox="0 0 22 22"><path d="M5 17L17 5M17 17L5 5" stroke="rgba(200,55,45,0.8)"/></svg><span class="bl">Clear</span></button>
+  <button class="btn" id="bsave"><svg viewBox="0 0 22 22"><rect x="3" y="3" width="16" height="16" rx="2.5"/><path d="M7 3V8.5H15V3"/><rect x="13" y="3" width="3.5" height="4.5"/><rect x="6" y="12" width="10" height="6" rx="1"/></svg><span class="bl">Save</span></button>
+  <button class="btn" id="bload"><svg viewBox="0 0 22 22"><path d="M11 15V5.5"/><path d="M6.5 10.5L11 5.5L15.5 10.5"/><line x1="4" y1="18" x2="18" y2="18"/></svg><span class="bl">Load</span></button>
+</div>
+
+<!-- NAV CUBE -->
 <div id="navcube">
   <div id="cube">
     <div class="fc fr" data-s="fr"><span>F</span></div>
@@ -99,7 +225,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   </div>
 </div>
 
-<div id="tright">
+<!-- COLOR RIGHT -->
+<div id="tr">
   <div class="cs on" style="background:#1a1a1a" data-c="#1a1a1a"></div>
   <div class="cs" style="background:#e53935" data-c="#e53935"></div>
   <div class="cs" style="background:#ff6d00" data-c="#ff6d00"></div>
@@ -107,10 +234,23 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   <div class="cs" style="background:#2e7d32" data-c="#2e7d32"></div>
   <div class="cs" style="background:#1565c0" data-c="#1565c0"></div>
   <div class="cs" style="background:#7b1fa2" data-c="#7b1fa2"></div>
-  <div id="cw"><input type="color" id="ci" value="#ff6d00"></div>
+  <div id="cwrap"><div id="cwdiv"></div><input type="color" id="ci" value="#ff6d00"></div>
 </div>
 
-<div id="bbar">
+<!-- GESTURE ZONE bottom-left -->
+<div id="gz">
+  <svg viewBox="0 0 46 46" fill="none" stroke="rgba(0,0,0,0.85)" stroke-width="1.4" stroke-linecap="round">
+    <path d="M11 23C11 16.4 16.4 11 23 11"/><path d="M20 8L23 11L20 14"/>
+    <path d="M35 23C35 29.6 29.6 35 23 35"/><path d="M26 38L23 35L26 32"/>
+    <path d="M17 17L12 12M29 17L34 12M17 29L12 34M29 29L34 34"/>
+    <circle cx="23" cy="23" r="2.2" fill="rgba(0,0,0,0.55)" stroke="none"/>
+  </svg>
+  <span id="gz-lb">Orbit / Zoom</span>
+  <span id="gz-h">drag · pinch</span>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bb">
   <div class="row">
     <span class="rl">Size</span>
     <input type="range" id="rSz" min="1" max="28" value="5" step="1">
@@ -137,53 +277,55 @@ const app=document.getElementById('app');
 const cv=document.getElementById('cv');
 const ctx=cv.getContext('2d');
 let W,H;
-
-function initCanvas(){
-  W=window.innerWidth;H=window.innerHeight;
-  cv.width=W;cv.height=H;
-  cv.style.width=W+'px';cv.style.height=H+'px';
-}
+function initCanvas(){W=window.innerWidth;H=window.innerHeight;cv.width=W;cv.height=H;cv.style.width=W+'px';cv.style.height=H+'px';}
 initCanvas();
-window.addEventListener('resize',()=>{initCanvas();offDirty=true;render();});
+window.addEventListener('resize',()=>{initCanvas();offDirty=true;schedRender();});
 
+// Camera
 let sT=-0.42,sP=1.12,sD=560;
-const dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const ln=a=>Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
-const nrm=a=>{const l=ln(a)||1;return[a[0]/l,a[1]/l,a[2]/l];};
-
+const d3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const x3=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const l3=a=>Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
+const n3=a=>{const l=l3(a)||1;return[a[0]/l,a[1]/l,a[2]/l];};
+function clampP(v){return Math.max(0.02,Math.min(Math.PI-0.02,v));}
 function basis(){
   const cx=sD*Math.sin(sP)*Math.sin(sT),cy=sD*Math.cos(sP),cz=sD*Math.sin(sP)*Math.cos(sT);
-  const fwd=nrm([-cx,-cy,-cz]);
-  let up=[0,1,0],rt=nrm(crs(fwd,up));
-  if(ln(rt)<0.001){up=[0,0,1];rt=nrm(crs(fwd,up));}
-  up=nrm(crs(rt,fwd));
+  const fwd=n3([-cx,-cy,-cz]);
+  let up=[0,1,0],rt=n3(x3(fwd,up));
+  if(l3(rt)<0.001){up=[0,0,1];rt=n3(x3(fwd,up));}
+  up=n3(x3(rt,fwd));
   return{fwd,rt,up,cx,cy,cz};
 }
-
 function w2s(wx,wy,wz){
   const b=basis();
   const px=wx-b.cx,py=wy-b.cy,pz=wz-b.cz;
-  const vx=dt([px,py,pz],b.rt),vy=dt([px,py,pz],b.up),vz=dt([px,py,pz],b.fwd);
+  const vx=d3([px,py,pz],b.rt),vy=d3([px,py,pz],b.up),vz=d3([px,py,pz],b.fwd);
   if(vz<0.5)return null;
   const s=650/vz;
   return{sx:W/2+vx*s,sy:H/2-vy*s,vz,s};
 }
-
 function s2w(px,py,wz){
   const b=basis();
   const rx=(px-W/2)/650,ry=-(py-H/2)/650;
-  const rd=nrm([b.rt[0]*rx+b.up[0]*ry+b.fwd[0],b.rt[1]*rx+b.up[1]*ry+b.fwd[1],b.rt[2]*rx+b.up[2]*ry+b.fwd[2]]);
-  const dn=dt(b.fwd,rd);
+  const rd=n3([b.rt[0]*rx+b.up[0]*ry+b.fwd[0],b.rt[1]*rx+b.up[1]*ry+b.fwd[1],b.rt[2]*rx+b.up[2]*ry+b.fwd[2]]);
+  const dn=d3(b.fwd,rd);
   if(Math.abs(dn)<0.001)return null;
   const t=(b.fwd[0]*(0-b.cx)+b.fwd[1]*(0-b.cy)+b.fwd[2]*(wz-b.cz))/dn;
   if(t<0.1)return null;
   return{x:b.cx+rd[0]*t,y:b.cy+rd[1]*t,z:b.cz+rd[2]*t};
 }
+function applyOrbit(dx,dy,spd){sT-=dx*spd;sP=clampP(sP+dy*spd);updateCube();}
 
-let strokes=[],undoStack=[],cur=[],curHue=0;
+// Layers
+const LC=['#4a8ef5','#e05252','#52c07a','#e0a030','#a052e0','#52b8e0'];
+let layers=[{id:0,name:'Layer 1',color:LC[0],visible:true,strokes:[]}];
+let activeLayerId=0,layerCount=1;
+let undoStack=[];
+function getActive(){return layers.find(l=>l.id===activeLayerId)||layers[0];}
+
+// Tool state
 let tool='pen',col='#1a1a1a',sz=5,dz=0,sm=5,fl=85,symN=0;
-let dn=false,orb=false,lp=null;
+let cur=[],curHue=0,isDrawing=false,offDirty=true;
 
 function symCopies(pts,n){
   if(n<2)return[];
@@ -206,6 +348,35 @@ function smoothPts(pts,lv){
   });
 }
 
+// POLISH: Laplacian relaxation on existing stroke point arrays
+function laplacianSmooth(pts,passes){
+  let r=[...pts];
+  for(let p=0;p<passes;p++){
+    r=r.map((pt,i)=>{
+      if(i===0||i===r.length-1)return pt;
+      return{
+        x:(r[i-1].x+r[i+1].x)*0.5,
+        y:(r[i-1].y+r[i+1].y)*0.5,
+        z:(r[i-1].z+r[i+1].z)*0.5
+      };
+    });
+  }
+  return r;
+}
+
+function applyPolish(targetLayers, passes){
+  targetLayers.forEach(l=>{
+    l.strokes=l.strokes.map(s=>({
+      ...s,
+      pts: laplacianSmooth(s.pts, passes)
+    }));
+    // Invalidate layer cache
+    delete l._clean;
+  });
+  offDirty=true;schedRender();
+}
+
+// Stroke rendering
 function tracePath(c,sp){
   if(sp.length<2)return;
   c.moveTo(sp[0].sx,sp[0].sy);
@@ -214,9 +385,9 @@ function tracePath(c,sp){
   }
   c.lineTo(sp[sp.length-1].sx,sp[sp.length-1].sy);
 }
-
 function paintStroke(c,s){
-  const sp=smoothPts(s.pts,s.sm||1).map(p=>w2s(p.x,p.y,p.z)).filter(Boolean);
+  const pts=smoothPts(s.pts,s.sm||1);
+  const sp=pts.map(p=>w2s(p.x,p.y,p.z)).filter(Boolean);
   if(sp.length<2)return;
   const fog=Math.max(0.15,Math.min(1,1-(sp[0].vz-200)/1800));
   const sc=sp[0].s,al=fog*(s.fl||85)/100;
@@ -257,41 +428,50 @@ function paintGrid(c){
     if(a&&b){c.beginPath();c.moveTo(a.sx,a.sy);c.lineTo(b.sx,b.sy);c.strokeStyle='rgba(0,0,0,0.09)';c.lineWidth=0.5;c.stroke();}
   }
   const dl=w2s(-700,0,dz),dr=w2s(700,0,dz);
-  if(dl&&dr){c.save();c.beginPath();c.moveTo(dl.sx,dl.sy);c.lineTo(dr.sx,dr.sy);c.strokeStyle='rgba(50,90,255,0.3)';c.lineWidth=1;c.setLineDash([6,8]);c.stroke();c.setLineDash([]);c.restore();}
+  if(dl&&dr){c.save();c.beginPath();c.moveTo(dl.sx,dl.sy);c.lineTo(dr.sx,dr.sy);c.strokeStyle='rgba(50,90,255,0.28)';c.lineWidth=1;c.setLineDash([6,8]);c.stroke();c.setLineDash([]);c.restore();}
   if(symN>=2){
     const yt=w2s(0,350,0),yb=w2s(0,-350,0);
-    if(yt&&yb){c.save();c.beginPath();c.moveTo(yt.sx,yt.sy);c.lineTo(yb.sx,yb.sy);c.strokeStyle='rgba(255,40,80,0.6)';c.lineWidth=1.2;c.stroke();c.restore();}
+    if(yt&&yb){c.save();c.beginPath();c.moveTo(yt.sx,yt.sy);c.lineTo(yb.sx,yb.sy);c.strokeStyle='rgba(255,40,80,0.55)';c.lineWidth=1.2;c.stroke();c.restore();}
     if(symN>2){
       for(let k=0;k<symN;k++){
-        const a=Math.PI*k/symN,cs=Math.cos(a),ss=Math.sin(a),L=600;
-        const p1=w2s(-L*cs,0,-L*ss),p2=w2s(L*cs,0,L*ss);
-        if(p1&&p2){c.save();c.beginPath();c.moveTo(p1.sx,p1.sy);c.lineTo(p2.sx,p2.sy);c.strokeStyle='rgba(255,40,80,0.3)';c.lineWidth=0.8;c.setLineDash([4,6]);c.stroke();c.setLineDash([]);c.restore();}
+        const a=Math.PI*k/symN,cs2=Math.cos(a),ss2=Math.sin(a),L=600;
+        const p1=w2s(-L*cs2,0,-L*ss2),p2=w2s(L*cs2,0,L*ss2);
+        if(p1&&p2){c.save();c.beginPath();c.moveTo(p1.sx,p1.sy);c.lineTo(p2.sx,p2.sy);c.strokeStyle='rgba(255,40,80,0.28)';c.lineWidth=0.8;c.setLineDash([4,6]);c.stroke();c.setLineDash([]);c.restore();}
       }
     }
   }
 }
 
-let off=null,oCtx=null,offDirty=true;
-function getOff(){
-  if(!off||off.width!==W||off.height!==H){
-    off=document.createElement('canvas');off.width=W;off.height=H;
-    oCtx=off.getContext('2d');offDirty=true;
-  }
-  return oCtx;
+// Per-layer offscreen compositing
+let mainOff=null,mainCtx2=null;
+function ensureMain(){
+  if(!mainOff||mainOff.width!==W||mainOff.height!==H){mainOff=document.createElement('canvas');mainOff.width=W;mainOff.height=H;mainCtx2=mainOff.getContext('2d');}
 }
-
-function rebuildOff(){
-  const oc=getOff();
-  oc.clearRect(0,0,W,H);
-  oc.fillStyle='#f0efeb';oc.fillRect(0,0,W,H);
-  strokes.forEach(s=>paintStroke(oc,s));
+function rebuildMain(){
+  ensureMain();
+  mainCtx2.clearRect(0,0,W,H);
+  mainCtx2.fillStyle='#f0efeb';mainCtx2.fillRect(0,0,W,H);
+  layers.forEach(l=>{
+    if(!l.visible)return;
+    // Each layer gets a clean transparent offscreen
+    if(!l._clean||l._clean.width!==W||l._clean.height!==H){
+      l._clean=document.createElement('canvas');l._clean.width=W;l._clean.height=H;
+      l._cleanCtx=l._clean.getContext('2d');
+    }
+    l._cleanCtx.clearRect(0,0,W,H);
+    l.strokes.forEach(s=>paintStroke(l._cleanCtx,s));
+    mainCtx2.drawImage(l._clean,0,0);
+  });
   offDirty=false;
 }
 
+let rafId=null;
+function schedRender(){if(rafId)return;rafId=requestAnimationFrame(()=>{rafId=null;render();});}
 function render(){
-  if(offDirty)rebuildOff();
+  if(offDirty)rebuildMain();
   ctx.clearRect(0,0,W,H);
-  ctx.drawImage(off,0,0);
+  ctx.fillStyle='#f0efeb';ctx.fillRect(0,0,W,H);
+  ctx.drawImage(mainOff,0,0);
   paintGrid(ctx);
   if(cur.length>=2){
     const ls={pts:cur,c:col,sz,t:tool,sm:Math.min(sm,3),fl};
@@ -300,102 +480,362 @@ function render(){
   }
 }
 
-app.addEventListener('pointerdown',e=>{
-  if(e.target!==cv)return;
-  app.setPointerCapture(e.pointerId);
-  lp={x:e.clientX,y:e.clientY};
-  if(tool==='orbit'){orb=true;return;}
-  dn=true;cur=[];curHue=Math.floor(Math.random()*360);
-  const p3=s2w(lp.x,lp.y,dz);
-  if(p3){cur.push(p3);render();}
-},{passive:true});
+// Touch input (native, fast)
+let t1=null,t2=null,t1Prev=null,t2Prev=null;
+function tPos(t){return{x:t.clientX,y:t.clientY,id:t.identifier};}
 
-app.addEventListener('pointermove',e=>{
-  if(!dn&&!orb)return;
-  const p={x:e.clientX,y:e.clientY};
-  if(orb&&lp){
-    sT-=(p.x-lp.x)*0.006;
-    sP=Math.max(0.08,Math.min(Math.PI-0.08,sP+(p.y-lp.y)*0.006));
-    lp=p;updateCube();offDirty=true;render();return;
-  }
-  if(dn){
-    const p3=s2w(p.x,p.y,dz);
-    if(p3){
-      const last=cur[cur.length-1];
-      if(!last||Math.hypot(p3.x-last.x,p3.y-last.y,p3.z-last.z)>2){cur.push(p3);render();}
+cv.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  closeAllPanels();
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    if(t1===null){
+      t1=t.identifier;t1Prev=tPos(t);
+      if(tool!=='orbit'){
+        isDrawing=true;cur=[];curHue=Math.floor(Math.random()*360);
+        const p3=s2w(t1Prev.x,t1Prev.y,dz);
+        if(p3)cur.push(p3);
+      }
+    }else if(t2===null){
+      t2=t.identifier;t2Prev=tPos(t);
+      if(isDrawing){isDrawing=false;cur=[];}
     }
   }
-  lp=p;
-},{passive:true});
+},{passive:false});
 
+cv.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    const pos=tPos(t);
+    if(t.identifier===t1){
+      if(t2!==null&&t2Prev){
+        const mp={x:(t1Prev.x+t2Prev.x)/2,y:(t1Prev.y+t2Prev.y)/2};
+        const mc={x:(pos.x+t2Prev.x)/2,y:(pos.y+t2Prev.y)/2};
+        applyOrbit(mc.x-mp.x,mc.y-mp.y,0.006);
+        const dp=Math.hypot(t1Prev.x-t2Prev.x,t1Prev.y-t2Prev.y);
+        const dc=Math.hypot(pos.x-t2Prev.x,pos.y-t2Prev.y);
+        if(dp>10)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
+        offDirty=true;
+      }else if(tool==='orbit'){
+        applyOrbit(pos.x-t1Prev.x,pos.y-t1Prev.y,0.006);offDirty=true;
+      }else if(isDrawing){
+        const p3=s2w(pos.x,pos.y,dz);
+        if(p3){const last=cur[cur.length-1];if(!last||Math.hypot(p3.x-last.x,p3.y-last.y,p3.z-last.z)>2)cur.push(p3);}
+      }
+      t1Prev=pos;schedRender();
+    }else if(t.identifier===t2){
+      if(t1Prev){
+        const mp={x:(t1Prev.x+t2Prev.x)/2,y:(t1Prev.y+t2Prev.y)/2};
+        const mc={x:(t1Prev.x+pos.x)/2,y:(t1Prev.y+pos.y)/2};
+        applyOrbit(mc.x-mp.x,mc.y-mp.y,0.006);
+        const dp=Math.hypot(t1Prev.x-t2Prev.x,t1Prev.y-t2Prev.y);
+        const dc=Math.hypot(t1Prev.x-pos.x,t1Prev.y-pos.y);
+        if(dp>10)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
+        offDirty=true;
+      }
+      t2Prev=pos;schedRender();
+    }
+  }
+},{passive:false});
+
+cv.addEventListener('touchend',e=>{
+  e.preventDefault();
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    if(t.identifier===t1){
+      t1=null;t1Prev=null;
+      if(isDrawing){
+        isDrawing=false;
+        if(cur.length>1){
+          undoStack.push({layerId:getActive().id,count:getActive().strokes.length});
+          const s={pts:[...cur],c:col,sz,t:tool,sm,fl};
+          getActive().strokes.push(s);
+          if(symN>=2)symCopies(cur,symN).forEach(mp=>getActive().strokes.push({...s,pts:mp}));
+          offDirty=true;
+        }
+        cur=[];schedRender();
+      }
+    }else if(t.identifier===t2){t2=null;t2Prev=null;}
+  }
+},{passive:false});
+cv.addEventListener('touchcancel',()=>{t1=null;t2=null;t1Prev=null;t2Prev=null;isDrawing=false;cur=[];},{passive:false});
+
+// Mouse fallback
+let orbiting=false,mlp=null;
+app.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch'||e.target!==cv)return;
+  app.setPointerCapture(e.pointerId);mlp={x:e.clientX,y:e.clientY};
+  if(tool==='orbit'){orbiting=true;return;}
+  isDrawing=true;cur=[];curHue=Math.floor(Math.random()*360);
+  const p3=s2w(e.clientX,e.clientY,dz);if(p3){cur.push(p3);schedRender();}
+},{passive:true});
+app.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch'||(!isDrawing&&!orbiting))return;
+  if(orbiting){applyOrbit(e.clientX-mlp.x,e.clientY-mlp.y,0.006);mlp={x:e.clientX,y:e.clientY};offDirty=true;schedRender();return;}
+  if(isDrawing){
+    const p3=s2w(e.clientX,e.clientY,dz);
+    if(p3){const last=cur[cur.length-1];if(!last||Math.hypot(p3.x-last.x,p3.y-last.y,p3.z-last.z)>2){cur.push(p3);schedRender();}}
+  }
+  mlp={x:e.clientX,y:e.clientY};
+},{passive:true});
 app.addEventListener('pointerup',e=>{
-  if(orb){orb=false;return;}
-  if(dn){
-    dn=false;
+  if(e.pointerType==='touch')return;
+  if(orbiting){orbiting=false;return;}
+  if(isDrawing){
+    isDrawing=false;
     if(cur.length>1){
-      undoStack.push(strokes.length);
+      undoStack.push({layerId:getActive().id,count:getActive().strokes.length});
       const s={pts:[...cur],c:col,sz,t:tool,sm,fl};
-      strokes.push(s);
-      if(symN>=2)symCopies(cur,symN).forEach(mp=>strokes.push({...s,pts:mp}));
+      getActive().strokes.push(s);
+      if(symN>=2)symCopies(cur,symN).forEach(mp=>getActive().strokes.push({...s,pts:mp}));
       offDirty=true;
     }
-    cur=[];render();
+    cur=[];schedRender();
   }
 },{passive:true});
+cv.addEventListener('wheel',e=>{e.preventDefault();sD=Math.max(80,Math.min(1800,sD+e.deltaY*0.35));offDirty=true;schedRender();},{passive:false});
 
-app.addEventListener('wheel',e=>{sD=Math.max(80,Math.min(1800,sD+e.deltaY*0.35));offDirty=true;render();},{passive:true});
+// Gesture zone
+const gz=document.getElementById('gz');
+let gz1=null,gz2=null,gz1p=null,gz2p=null;
+gz.addEventListener('touchstart',e=>{
+  e.preventDefault();e.stopPropagation();gz.classList.add('active');
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    if(gz1===null){gz1=t.identifier;gz1p={x:t.clientX,y:t.clientY};}
+    else if(gz2===null){gz2=t.identifier;gz2p={x:t.clientX,y:t.clientY};}
+  }
+},{passive:false});
+gz.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    const pos={x:t.clientX,y:t.clientY};
+    if(t.identifier===gz1){
+      if(gz2!==null&&gz2p){
+        const dp=Math.hypot(gz1p.x-gz2p.x,gz1p.y-gz2p.y);
+        const dc=Math.hypot(pos.x-gz2p.x,pos.y-gz2p.y);
+        applyOrbit((gz1p.x+gz2p.x)/2-(pos.x+gz2p.x)/2,(gz1p.y+gz2p.y)/2-(pos.y+gz2p.y)/2,-0.018);
+        if(dp>5)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
+      }else{applyOrbit(pos.x-gz1p.x,pos.y-gz1p.y,0.018);}
+      gz1p=pos;offDirty=true;schedRender();
+    }else if(t.identifier===gz2){
+      if(gz1p){
+        const dp=Math.hypot(gz1p.x-gz2p.x,gz1p.y-gz2p.y);
+        const dc=Math.hypot(gz1p.x-pos.x,gz1p.y-pos.y);
+        if(dp>5)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
+        offDirty=true;schedRender();
+      }
+      gz2p=pos;
+    }
+  }
+},{passive:false});
+gz.addEventListener('touchend',e=>{
+  for(let i=0;i<e.changedTouches.length;i++){
+    const t=e.changedTouches[i];
+    if(t.identifier===gz1){gz1=null;gz1p=null;}
+    else if(t.identifier===gz2){gz2=null;gz2p=null;}
+  }
+  if(gz1===null&&gz2===null)gz.classList.remove('active');
+},{passive:false});
 
-document.getElementById('bbar').addEventListener('pointerdown',e=>e.stopPropagation());
+// Sliders
+document.getElementById('bb').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+document.getElementById('bb').addEventListener('pointerdown',e=>e.stopPropagation());
 document.getElementById('rSz').oninput=function(){sz=+this.value;document.getElementById('vSz').textContent=sz;};
-document.getElementById('rDz').oninput=function(){dz=+this.value;document.getElementById('vDz').textContent=dz;document.getElementById('hZ').textContent=dz;render();};
+document.getElementById('rDz').oninput=function(){dz=+this.value;document.getElementById('vDz').textContent=dz;document.getElementById('hZ').textContent=dz;schedRender();};
 document.getElementById('rSm').oninput=function(){sm=+this.value;document.getElementById('vSm').textContent=sm;};
 document.getElementById('rFl').oninput=function(){fl=+this.value;document.getElementById('vFl').textContent=fl+'%';};
 
+// Tools
 ['pen','neon','marker','ink','erase','orbit'].forEach(t=>{
   document.getElementById('b'+t).addEventListener('click',()=>{
     tool=t;
     document.querySelectorAll('.btn[data-t]').forEach(b=>b.classList.remove('on'));
     document.getElementById('b'+t).classList.add('on');
     document.getElementById('htool').textContent={pen:'Pen',neon:'Neon',marker:'Marker',ink:'Ink',erase:'Eraser',orbit:'Orbit'}[t];
+    closeAllPanels();
   });
 });
 
-document.getElementById('bsym').addEventListener('click',e=>{e.stopPropagation();document.getElementById('symp').classList.toggle('open');});
+// Panel helpers
+function closeAllPanels(){
+  document.getElementById('lp').classList.remove('open');
+  document.getElementById('symp').classList.remove('open');
+  document.getElementById('pp').classList.remove('open');
+}
+
+// Sym
+document.getElementById('bsym').addEventListener('click',e=>{
+  e.stopPropagation();
+  const wasOpen=document.getElementById('symp').classList.contains('open');
+  closeAllPanels();
+  if(!wasOpen)document.getElementById('symp').classList.add('open');
+});
 document.querySelectorAll('.sb').forEach(b=>{
   b.addEventListener('click',e=>{
-    e.stopPropagation();
-    symN=+b.dataset.n;
+    e.stopPropagation();symN=+b.dataset.n;
     document.querySelectorAll('.sb').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     document.getElementById('bsym').classList.toggle('on',symN>0);
-    render();
+    schedRender();
   });
 });
+document.getElementById('symp').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
 document.getElementById('symp').addEventListener('pointerdown',e=>e.stopPropagation());
 
-document.getElementById('bundo').addEventListener('click',()=>{if(undoStack.length){strokes=strokes.slice(0,undoStack.pop());offDirty=true;render();}});
-document.getElementById('bclr').addEventListener('click',()=>{undoStack.push(strokes.length);strokes=[];offDirty=true;render();});
-
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
-document.getElementById('bsave').addEventListener('click',()=>{try{localStorage.setItem('3dp9',JSON.stringify({strokes,cam:{sT,sP,sD}}));toast('Saved');}catch(e){toast('Save failed');}});
-document.getElementById('bload').addEventListener('click',()=>{try{const r=localStorage.getItem('3dp9');if(!r){toast('Nothing saved');return;}const d=JSON.parse(r);undoStack.push(strokes.length);strokes=d.strokes||[];if(d.cam){sT=d.cam.sT;sP=d.cam.sP;sD=d.cam.sD;}updateCube();offDirty=true;render();toast('Loaded');}catch(e){toast('Load failed');}});
-
-document.querySelectorAll('.cs').forEach(el=>{
-  el.addEventListener('pointerdown',e=>{e.stopPropagation();document.querySelectorAll('.cs,#cw').forEach(x=>x.classList.remove('on'));el.classList.add('on');col=el.dataset.c;});
+// Layers
+document.getElementById('blayer').addEventListener('click',e=>{
+  e.stopPropagation();
+  const wasOpen=document.getElementById('lp').classList.contains('open');
+  closeAllPanels();
+  if(!wasOpen)document.getElementById('lp').classList.add('open');
 });
-document.getElementById('cw').addEventListener('pointerdown',e=>{e.stopPropagation();document.getElementById('ci').click();});
-document.getElementById('ci').oninput=e=>{col=e.target.value;document.querySelectorAll('.cs,#cw').forEach(x=>x.classList.remove('on'));document.getElementById('cw').classList.add('on');};
+document.getElementById('lp').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+document.getElementById('lp').addEventListener('pointerdown',e=>e.stopPropagation());
 
+function renderLayerUI(){
+  const list=document.getElementById('layer-list');list.innerHTML='';
+  [...layers].reverse().forEach(l=>{
+    const item=document.createElement('div');
+    item.className='layer-item'+(l.id===activeLayerId?' cur':'');
+    item.innerHTML=`<div class="l-dot" style="background:${l.color}"></div>
+      <span class="l-name">${l.name}</span>
+      <button class="l-eye${l.visible?'':' off'}" data-id="${l.id}">
+        <svg viewBox="0 0 16 16">${l.visible
+          ?'<ellipse cx="8" cy="8" rx="5.5" ry="4"/><circle cx="8" cy="8" r="2" fill="rgba(0,0,0,0.45)" stroke="none"/>'
+          :'<path d="M2 14L14 2"/><path d="M5 10C5.5 11.3 6.6 12 8 12C10.2 12 11.5 10 11.5 8"/>'}
+        </svg>
+      </button>
+      <button class="l-del" data-id="${l.id}"><svg viewBox="0 0 14 14"><path d="M3 11L11 3M11 11L3 3"/></svg></button>`;
+    item.addEventListener('click',()=>{
+      activeLayerId=l.id;
+      document.getElementById('hlayer').textContent=l.name;
+      renderLayerUI();
+    });
+    item.querySelector('.l-eye').addEventListener('click',e2=>{
+      e2.stopPropagation();l.visible=!l.visible;
+      delete l._clean;offDirty=true;schedRender();renderLayerUI();
+    });
+    item.querySelector('.l-del').addEventListener('click',e2=>{
+      e2.stopPropagation();
+      if(layers.length<=1)return;
+      layers=layers.filter(x=>x.id!==l.id);
+      if(activeLayerId===l.id)activeLayerId=layers[layers.length-1].id;
+      offDirty=true;schedRender();renderLayerUI();
+      document.getElementById('hlayer').textContent=getActive().name;
+    });
+    list.appendChild(item);
+  });
+}
+renderLayerUI();
+document.getElementById('ladd').addEventListener('click',()=>{
+  layerCount++;
+  const nl={id:Date.now(),name:`Layer ${layerCount}`,color:LC[layerCount%LC.length],visible:true,strokes:[]};
+  layers.push(nl);activeLayerId=nl.id;
+  document.getElementById('hlayer').textContent=nl.name;
+  renderLayerUI();
+});
+
+// Polish panel — positioned near the Polish button
+document.getElementById('bpolish').addEventListener('click',e=>{
+  e.stopPropagation();
+  const wasOpen=document.getElementById('pp').classList.contains('open');
+  closeAllPanels();
+  if(!wasOpen){
+    // Position panel below the toolbar
+    const tlRect=document.getElementById('tl').getBoundingClientRect();
+    document.getElementById('pp').style.top=(tlRect.bottom+8)+'px';
+    document.getElementById('pp').classList.add('open');
+  }
+});
+document.getElementById('pp').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+document.getElementById('pp').addEventListener('pointerdown',e=>e.stopPropagation());
+document.getElementById('pp-str').oninput=function(){document.getElementById('pp-str-v').textContent=this.value;};
+document.getElementById('pp-apply').addEventListener('click',()=>{
+  const passes=+document.getElementById('pp-str').value;
+  const scope=document.getElementById('pp-scope').value;
+  const targets=scope==='all'?layers:[getActive()];
+  // Save undo snapshot
+  undoStack.push({
+    layerId:getActive().id,
+    count:getActive().strokes.length,
+    _polishSnapshot:layers.map(l=>({id:l.id,pts:l.strokes.map(s=>({...s,pts:[...s.pts]}))}))
+  });
+  applyPolish(targets,passes);
+  toast('Polish applied');
+  document.getElementById('pp').classList.remove('open');
+});
+
+// Undo (supports polish snapshot too)
+document.getElementById('bundo').addEventListener('click',()=>{
+  if(!undoStack.length)return;
+  const u=undoStack.pop();
+  if(u._polishSnapshot){
+    // Restore all layer point arrays
+    u._polishSnapshot.forEach(snap=>{
+      const l=layers.find(x=>x.id===snap.id);
+      if(l){l.strokes=snap.pts.map(s=>({...s}));delete l._clean;}
+    });
+  }else{
+    const l=layers.find(x=>x.id===u.layerId);
+    if(l){l.strokes=l.strokes.slice(0,u.count);delete l._clean;}
+  }
+  offDirty=true;schedRender();
+});
+document.getElementById('bclr').addEventListener('click',()=>{
+  const al=getActive();
+  undoStack.push({layerId:al.id,count:al.strokes.length});
+  al.strokes=[];delete al._clean;offDirty=true;schedRender();
+});
+
+// Save / Load
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+document.getElementById('bsave').addEventListener('click',()=>{
+  try{
+    const data=layers.map(l=>({id:l.id,name:l.name,color:l.color,visible:l.visible,strokes:l.strokes}));
+    localStorage.setItem('3dp11',JSON.stringify({layers:data,cam:{sT,sP,sD},activeLayerId}));
+    toast('Saved');
+  }catch(e){toast('Save failed');}
+});
+document.getElementById('bload').addEventListener('click',()=>{
+  try{
+    const r=localStorage.getItem('3dp11');if(!r){toast('Nothing saved');return;}
+    const d=JSON.parse(r);
+    layers=d.layers.map(l=>({...l}));
+    activeLayerId=d.activeLayerId||layers[0].id;
+    if(d.cam){sT=d.cam.sT;sP=d.cam.sP;sD=d.cam.sD;}
+    updateCube();offDirty=true;schedRender();renderLayerUI();
+    document.getElementById('hlayer').textContent=getActive().name;
+    toast('Loaded');
+  }catch(e){toast('Load failed');}
+});
+
+// Colors
+document.getElementById('tr').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+document.getElementById('tr').addEventListener('pointerdown',e=>e.stopPropagation());
+document.querySelectorAll('.cs').forEach(el=>{
+  const setColor=()=>{document.querySelectorAll('.cs').forEach(x=>x.classList.remove('on'));document.getElementById('cwdiv').classList.remove('on');el.classList.add('on');col=el.dataset.c;};
+  el.addEventListener('pointerdown',e=>{e.stopPropagation();setColor();});
+  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();setColor();},{passive:false});
+});
+document.getElementById('ci').addEventListener('input',e=>{col=e.target.value;document.querySelectorAll('.cs').forEach(x=>x.classList.remove('on'));document.getElementById('cwdiv').classList.add('on');});
+document.getElementById('ci').addEventListener('change',e=>{col=e.target.value;});
+
+// CSS Cube
 const cubeEl=document.getElementById('cube');
 function updateCube(){cubeEl.style.transform=`rotateX(${(sP-Math.PI/2)*180/Math.PI}deg) rotateY(${-sT*180/Math.PI}deg)`;}
 updateCube();
 let cd=false,cl=null;
 const nc=document.getElementById('navcube');
 nc.addEventListener('pointerdown',e=>{e.stopPropagation();cd=true;cl={x:e.clientX,y:e.clientY};nc.setPointerCapture(e.pointerId);});
-nc.addEventListener('pointermove',e=>{if(!cd)return;sT-=(e.clientX-cl.x)*0.012;sP=Math.max(0.08,Math.min(Math.PI-0.08,sP+(e.clientY-cl.y)*0.012));cl={x:e.clientX,y:e.clientY};updateCube();offDirty=true;render();});
+nc.addEventListener('pointermove',e=>{if(!cd)return;applyOrbit(e.clientX-cl.x,e.clientY-cl.y,0.012);cl={x:e.clientX,y:e.clientY};offDirty=true;schedRender();});
 nc.addEventListener('pointerup',()=>{cd=false;});
-const SNAPS={fr:[0,Math.PI/2],bk:[Math.PI,Math.PI/2],ri:[-Math.PI/2,Math.PI/2],le:[Math.PI/2,Math.PI/2],tp:[-0.42,0.15],bt:[-0.42,Math.PI-0.15]};
-document.querySelectorAll('.fc').forEach(f=>{f.addEventListener('click',e=>{e.stopPropagation();const s=SNAPS[f.dataset.s];if(s){sT=s[0];sP=s[1];updateCube();offDirty=true;render();}});});
+const SNAPS={fr:[0,Math.PI/2],bk:[Math.PI,Math.PI/2],ri:[-Math.PI/2,Math.PI/2],le:[Math.PI/2,Math.PI/2],tp:[-0.42,0.25],bt:[-0.42,Math.PI-0.25]};
+document.querySelectorAll('.fc').forEach(f=>{
+  f.addEventListener('click',e=>{e.stopPropagation();const s=SNAPS[f.dataset.s];if(s){sT=s[0];sP=s[1];updateCube();offDirty=true;schedRender();}});
+});
 
 render();
 </script>
