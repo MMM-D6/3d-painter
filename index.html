@@ -4,840 +4,1002 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>3D Painter</title>
 <style>
-html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#f0efeb;touch-action:none;}
-*{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
-#app{position:fixed;inset:0;background:#f0efeb;font-family:-apple-system,system-ui,sans-serif;}
-#cv{display:block;position:absolute;inset:0;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a1c;touch-action:none;}
+#app{position:fixed;inset:0;font-family:-apple-system,system-ui,sans-serif;}
 
-/* LEFT TOOLBAR — two columns to save vertical space */
-#tl{position:absolute;top:12px;left:12px;display:grid;grid-template-columns:1fr 1fr;gap:2px;
-  background:rgba(255,255,255,0.94);border:0.5px solid rgba(0,0,0,0.1);
-  border-radius:14px;padding:6px;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.08);width:96px;}
-.btn{width:42px;height:42px;border-radius:10px;border:none;background:transparent;
-  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
-.btn:active,.btn.on{background:rgba(0,0,0,0.1);}
-.btn svg{width:22px;height:22px;fill:none;stroke:rgba(0,0,0,0.62);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
-.btn.on svg{stroke:#000;}
-.bl{font-size:8.5px;color:rgba(0,0,0,0.32);line-height:1;white-space:nowrap;}
-.btn.on .bl{color:rgba(0,0,0,0.6);}
-/* full-width items span both cols */
+/* WebGL canvas fills entire screen */
+#glc{position:absolute;inset:0;display:block;touch-action:none;}
+
+/* 2D overlay canvas for live stroke preview only */
+#oc{position:absolute;inset:0;display:block;touch-action:none;pointer-events:none;}
+
+/* ── UI PANELS ── */
+.panel{background:rgba(38,38,40,0.94);border:0.5px solid rgba(255,255,255,0.1);
+  border-radius:14px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+
+/* LEFT TOOLBAR — 2 cols */
+#tl{position:absolute;top:12px;left:12px;display:grid;grid-template-columns:1fr 1fr;
+  gap:2px;padding:6px;z-index:50;width:100px;}
+.btn{width:44px;height:44px;border-radius:10px;border:none;background:transparent;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1px;color:inherit;}
+.btn:active,.btn.on{background:rgba(255,255,255,0.15);}
+.btn svg{width:22px;height:22px;fill:none;stroke:rgba(255,255,255,0.6);
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.btn.on svg{stroke:#fff;}
+.bl{font-size:8px;color:rgba(255,255,255,0.3);line-height:1;white-space:nowrap;}
+.btn.on .bl{color:rgba(255,255,255,0.7);}
+.sep{grid-column:span 2;height:.5px;background:rgba(255,255,255,0.08);margin:2px 4px;}
 .btn.full{grid-column:span 2;width:100%;}
-.sep{grid-column:span 2;height:.5px;background:rgba(0,0,0,0.08);margin:2px 4px;}
 
 /* COLOR PANEL RIGHT */
-#tr{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:5px;
-  background:rgba(255,255,255,0.94);border:0.5px solid rgba(0,0,0,0.1);
-  border-radius:14px;padding:7px;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
-.cs{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;display:block;flex-shrink:0;}
-.cs.on{border-color:#111;}
+#tr{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;
+  gap:5px;padding:7px;z-index:50;}
+.cs{width:28px;height:28px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;display:block;flex-shrink:0;}
+.cs.on{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,0.3);}
 #cwrap{width:28px;height:28px;position:relative;flex-shrink:0;}
-#cwdiv{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.18);
+#cwdiv{width:28px;height:28px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.2);
   background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);display:block;}
-#cwdiv.on{border-color:#111;border-width:2.5px;}
+#cwdiv.on{border-color:#fff;border-width:2.5px;}
 #ci{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0;}
 
 /* NAV CUBE */
-#navcube{position:absolute;top:12px;right:58px;z-index:50;width:68px;height:68px;perspective:150px;cursor:grab;}
-#cube{width:36px;height:36px;position:relative;transform-style:preserve-3d;margin:16px auto;pointer-events:none;}
-.fc{position:absolute;width:36px;height:36px;border:1px solid rgba(0,0,0,0.18);
-  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
-  border-radius:2px;pointer-events:all;cursor:pointer;}
-.fc span{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
-.fc.fr{background:rgba(74,143,212,.85);transform:translateZ(18px);}
-.fc.bk{background:rgba(100,100,130,.85);transform:rotateY(180deg) translateZ(18px);}
-.fc.ri{background:rgba(192,64,64,.85);transform:rotateY(90deg) translateZ(18px);}
-.fc.le{background:rgba(64,136,64,.85);transform:rotateY(-90deg) translateZ(18px);}
-.fc.tp{background:rgba(80,160,80,.85);transform:rotateX(90deg) translateZ(18px);}
-.fc.bt{background:rgba(138,80,80,.85);transform:rotateX(-90deg) translateZ(18px);}
+#navcube{position:absolute;top:12px;right:58px;z-index:50;
+  width:70px;height:70px;perspective:160px;cursor:grab;}
+#cube{width:36px;height:36px;position:relative;transform-style:preserve-3d;
+  margin:17px auto;pointer-events:none;}
+.fc{position:absolute;width:36px;height:36px;
+  border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;border-radius:2px;
+  pointer-events:all;cursor:pointer;}
+.fc span{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.8);}
+.fc.fr{background:rgba(74,143,212,.8);transform:translateZ(18px);}
+.fc.bk{background:rgba(80,80,110,.8);transform:rotateY(180deg) translateZ(18px);}
+.fc.ri{background:rgba(180,60,60,.8);transform:rotateY(90deg) translateZ(18px);}
+.fc.le{background:rgba(60,120,60,.8);transform:rotateY(-90deg) translateZ(18px);}
+.fc.tp{background:rgba(70,150,70,.8);transform:rotateX(90deg) translateZ(18px);}
+.fc.bt{background:rgba(120,70,60,.8);transform:rotateX(-90deg) translateZ(18px);}
 
-/* LAYER PANEL — slides out from left below toolbar */
-#lp{position:absolute;top:12px;left:110px;width:185px;
-  background:rgba(255,255,255,0.97);border:0.5px solid rgba(0,0,0,0.12);
-  border-radius:14px;padding:10px;z-index:60;display:none;
-  box-shadow:0 4px 20px rgba(0,0,0,0.12);max-height:calc(100vh - 30px);overflow-y:auto;}
+/* LAYER PANEL */
+#lp{position:absolute;top:12px;left:114px;width:185px;padding:10px;
+  z-index:60;display:none;max-height:80vh;overflow-y:auto;}
 #lp.open{display:block;}
-.lp-title{font-size:10px;color:rgba(0,0,0,0.35);font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;margin-bottom:8px;}
-.layer-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:8px;cursor:pointer;}
-.layer-item:hover{background:rgba(0,0,0,0.04);}
-.layer-item.cur{background:rgba(0,0,0,0.08);}
-.l-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.l-name{font-size:12px;color:rgba(0,0,0,0.7);flex:1;}
-.l-eye{width:20px;height:20px;border:none;background:transparent;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
-.l-eye svg{width:14px;height:14px;fill:none;stroke:rgba(0,0,0,0.4);stroke-width:1.5;stroke-linecap:round;}
-.l-eye.off svg{stroke:rgba(0,0,0,0.18);}
-.l-del{width:20px;height:20px;border:none;background:transparent;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
-.l-del svg{width:13px;height:13px;fill:none;stroke:rgba(200,60,50,0.45);stroke-width:1.6;stroke-linecap:round;}
-.l-add{display:flex;align-items:center;gap:6px;padding:5px 6px;margin-top:5px;
-  border-top:.5px solid rgba(0,0,0,0.07);cursor:pointer;border-radius:8px;}
-.l-add:hover{background:rgba(0,0,0,0.04);}
-.l-add span{font-size:12px;color:rgba(0,0,0,0.4);}
+.lp-t{font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+.li{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:8px;cursor:pointer;}
+.li:hover{background:rgba(255,255,255,0.06);}
+.li.cur{background:rgba(255,255,255,0.12);}
+.ldot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.lname{font-size:12px;color:rgba(255,255,255,0.7);flex:1;}
+.leye,.ldel{width:20px;height:20px;border:none;background:transparent;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
+.leye svg,.ldel svg{width:14px;height:14px;fill:none;stroke:rgba(255,255,255,0.35);
+  stroke-width:1.5;stroke-linecap:round;}
+.leye.off svg{stroke:rgba(255,255,255,0.15);}
+.ldel svg{stroke:rgba(255,80,70,0.5);}
+.ladd{display:flex;align-items:center;gap:6px;padding:5px 6px;margin-top:5px;
+  border-top:.5px solid rgba(255,255,255,0.08);cursor:pointer;border-radius:8px;}
+.ladd:hover{background:rgba(255,255,255,0.06);}
+.ladd span{font-size:12px;color:rgba(255,255,255,0.35);}
 
 /* SYM PANEL */
 #symp{position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  background:rgba(255,255,255,0.97);border:0.5px solid rgba(0,0,0,0.1);
-  border-radius:11px;padding:5px 7px;display:none;gap:4px;z-index:60;white-space:nowrap;}
+  padding:5px 7px;display:none;gap:4px;z-index:60;white-space:nowrap;}
 #symp.open{display:flex;}
-.sb{height:26px;padding:0 8px;border-radius:6px;border:.5px solid rgba(0,0,0,0.14);
-  background:transparent;font-size:11px;font-weight:600;color:rgba(0,0,0,0.48);cursor:pointer;}
-.sb.on{background:#1a1a1a;color:#fff;}
+.sb{height:26px;padding:0 9px;border-radius:6px;
+  border:.5px solid rgba(255,255,255,0.15);background:transparent;
+  font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);cursor:pointer;}
+.sb.on{background:rgba(255,255,255,0.9);color:#000;}
 
 /* POLISH PANEL */
-#pp{position:absolute;left:110px;background:rgba(255,255,255,0.97);
-  border:0.5px solid rgba(0,0,0,0.12);border-radius:14px;padding:12px;
-  z-index:60;display:none;width:220px;box-shadow:0 4px 20px rgba(0,0,0,0.12);}
+#pp{position:absolute;left:114px;padding:12px;z-index:60;display:none;width:220px;}
 #pp.open{display:block;}
-.pp-title{font-size:10px;color:rgba(0,0,0,0.35);font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;margin-bottom:10px;}
-.pp-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.pp-label{font-size:11px;color:rgba(0,0,0,0.5);flex-shrink:0;width:62px;}
-.pp-val{font-size:11px;font-weight:700;color:rgba(0,0,0,0.7);min-width:24px;text-align:right;flex-shrink:0;}
-input.pp-sl{flex:1;height:20px;-webkit-appearance:none;appearance:none;background:transparent;border:none;outline:none;}
-input.pp-sl::-webkit-slider-runnable-track{height:4px;background:rgba(0,0,0,0.13);border-radius:4px;}
-input.pp-sl::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#1a1a1a;cursor:pointer;margin-top:-7px;}
-#pp-apply{width:100%;margin-top:4px;padding:8px;border-radius:9px;border:none;
-  background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;}
-#pp-apply:active{opacity:0.8;}
-#pp-note{font-size:10px;color:rgba(0,0,0,0.35);margin-top:8px;line-height:1.4;}
+.ppt{font-size:10px;color:rgba(255,255,255,0.3);font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+.ppr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.ppl{font-size:11px;color:rgba(255,255,255,0.45);flex-shrink:0;width:62px;}
+.ppv{font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);min-width:24px;text-align:right;flex-shrink:0;}
+input.ppsl{flex:1;height:20px;-webkit-appearance:none;appearance:none;
+  background:transparent;border:none;outline:none;}
+input.ppsl::-webkit-slider-runnable-track{height:4px;background:rgba(255,255,255,0.15);border-radius:4px;}
+input.ppsl::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:#fff;cursor:pointer;margin-top:-7px;}
+#pp select{flex:1;height:28px;border-radius:7px;
+  border:0.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);
+  color:rgba(255,255,255,0.7);font-size:12px;padding:0 6px;}
+#ppa{width:100%;margin-top:4px;padding:9px;border-radius:9px;border:none;
+  background:rgba(255,255,255,0.92);color:#000;font-size:13px;font-weight:600;cursor:pointer;}
+#ppn{font-size:10px;color:rgba(255,255,255,0.28);margin-top:8px;line-height:1.5;}
 
 /* HUD */
 #hud{position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  background:rgba(255,255,255,0.88);border:.5px solid rgba(0,0,0,0.1);
-  border-radius:7px;padding:3px 10px;font-size:11px;color:rgba(0,0,0,0.42);
+  padding:3px 10px;font-size:11px;color:rgba(255,255,255,0.38);
   z-index:10;white-space:nowrap;pointer-events:none;}
 
 /* BOTTOM BAR */
-#bb{position:absolute;bottom:12px;left:140px;right:12px;
-  background:rgba(255,255,255,0.97);border:.5px solid rgba(0,0,0,0.12);
-  border-radius:16px;padding:8px 14px;display:flex;flex-direction:column;
-  gap:6px;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+#bb{position:absolute;bottom:12px;left:12px;right:12px;padding:9px 14px;
+  display:flex;flex-direction:column;gap:6px;z-index:50;}
 .row{display:flex;align-items:center;gap:8px;}
-.rl{font-size:10px;color:rgba(0,0,0,0.35);font-weight:600;flex-shrink:0;width:44px;text-align:right;}
-.rv{font-size:11px;font-weight:700;color:rgba(0,0,0,0.68);min-width:30px;text-align:right;flex-shrink:0;}
-.rdiv{width:.5px;height:16px;background:rgba(0,0,0,0.1);flex-shrink:0;}
-input[type=range]{flex:1;min-width:0;height:20px;-webkit-appearance:none;appearance:none;
-  background:transparent;border:none;outline:none;cursor:pointer;}
-input[type=range]::-webkit-slider-runnable-track{height:4px;background:rgba(0,0,0,0.13);border-radius:4px;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;
-  border-radius:50%;background:#1a1a1a;cursor:pointer;margin-top:-8px;}
+.rl{font-size:10px;color:rgba(255,255,255,0.32);font-weight:600;
+  flex-shrink:0;width:44px;text-align:right;}
+.rv{font-size:11px;font-weight:700;color:rgba(255,255,255,0.65);
+  min-width:30px;text-align:right;flex-shrink:0;}
+.rdiv{width:.5px;height:16px;background:rgba(255,255,255,0.1);flex-shrink:0;}
+input[type=range]{flex:1;min-width:0;height:20px;-webkit-appearance:none;
+  appearance:none;background:transparent;border:none;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-runnable-track{height:4px;
+  background:rgba(255,255,255,0.15);border-radius:4px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;
+  height:20px;border-radius:50%;background:#fff;cursor:pointer;margin-top:-8px;}
 
-/* GESTURE ZONE bottom-left */
-#gz{position:absolute;bottom:12px;left:12px;width:118px;height:118px;z-index:50;
-  border-radius:20px;background:rgba(255,255,255,0.14);
-  border:.5px solid rgba(0,0,0,0.07);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;}
-#gz.active{background:rgba(255,255,255,0.55);border-color:rgba(0,0,0,0.14);}
-#gz svg{width:50px;height:50px;opacity:0.2;transition:opacity .15s;}
-#gz.active svg{opacity:0.48;}
-#gz-lb{font-size:9px;color:rgba(0,0,0,0.25);letter-spacing:.05em;text-transform:uppercase;}
-#gz-h{font-size:8px;color:rgba(0,0,0,0.16);}
+/* GESTURE ZONE: full left half of bottom area — transparent, overlays bottom bar */
+#gz{position:absolute;bottom:0;left:0;right:0;height:200px;z-index:40;
+  touch-action:none;pointer-events:none;}
+/* visual indicator only when active */
+#gz-ring{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+  width:80px;height:80px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0);
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s,background .2s;pointer-events:none;}
+#gz-ring.active{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);}
+#gz-ring svg{width:36px;height:36px;opacity:0;transition:opacity .2s;}
+#gz-ring.active svg{opacity:0.35;}
 
-#toast{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);
-  background:rgba(20,20,20,.88);color:#fff;border-radius:8px;
-  padding:5px 13px;font-size:12px;display:none;z-index:200;pointer-events:none;}
+#toast{position:absolute;top:60px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.92);color:#000;border-radius:8px;
+  padding:5px 13px;font-size:12px;display:none;z-index:200;pointer-events:none;font-weight:500;}
 </style>
 </head>
 <body>
 <div id="app">
-<canvas id="cv"></canvas>
-<div id="hud">Tool: <b id="htool">Pen</b> | Layer: <b id="hlayer">Layer 1</b> | Z: <b id="hZ">0</b></div>
+  <!-- WebGL layer: background + committed strokes -->
+  <canvas id="glc"></canvas>
+  <!-- 2D overlay: live stroke preview only -->
+  <canvas id="oc"></canvas>
 
-<div id="symp">
-  <button class="sb on" data-n="0">Off</button>
-  <button class="sb" data-n="2">2-way</button>
-  <button class="sb" data-n="3">3-way</button>
-  <button class="sb" data-n="4">4-way</button>
-  <button class="sb" data-n="6">6-way</button>
-  <button class="sb" data-n="8">8-way</button>
-</div>
-<div id="toast"></div>
+  <div id="hud">Tool: <b id="htool">Pen</b> | <b id="hlayer">Layer 1</b> | Z:<b id="hZ">0</b></div>
 
-<!-- LAYER PANEL -->
-<div id="lp">
-  <div class="lp-title">Layers</div>
-  <div id="layer-list"></div>
-  <div class="l-add" id="ladd">
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(0,0,0,0.4)" stroke-width="1.6" stroke-linecap="round"><path d="M7 2V12M2 7H12"/></svg>
-    <span>New Layer</span>
+  <div id="symp" class="panel">
+    <button class="sb on" data-n="0">Off</button>
+    <button class="sb" data-n="2">2×</button>
+    <button class="sb" data-n="3">3×</button>
+    <button class="sb" data-n="4">4×</button>
+    <button class="sb" data-n="6">6×</button>
+    <button class="sb" data-n="8">8×</button>
   </div>
-</div>
+  <div id="toast"></div>
 
-<!-- POLISH PANEL -->
-<div id="pp">
-  <div class="pp-title">Polish Strokes</div>
-  <div class="pp-row">
-    <span class="pp-label">Strength</span>
-    <input type="range" class="pp-sl" id="pp-str" min="1" max="10" value="3" step="1">
-    <span class="pp-val" id="pp-str-v">3</span>
+  <div id="lp" class="panel">
+    <div class="lp-t">Layers</div>
+    <div id="ll"></div>
+    <div class="ladd" id="ladd">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+        stroke="rgba(255,255,255,0.4)" stroke-width="1.6" stroke-linecap="round">
+        <path d="M7 2V12M2 7H12"/>
+      </svg>
+      <span>New Layer</span>
+    </div>
   </div>
-  <div class="pp-row">
-    <span class="pp-label">Scope</span>
-    <select id="pp-scope" style="flex:1;height:28px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.15);background:#fff;font-size:12px;padding:0 6px;">
-      <option value="active">Active layer</option>
-      <option value="all">All layers</option>
-    </select>
+
+  <div id="pp" class="panel">
+    <div class="ppt">Polish Strokes</div>
+    <div class="ppr">
+      <span class="ppl">Strength</span>
+      <input type="range" class="ppsl" id="ppstr" min="1" max="12" value="3">
+      <span class="ppv" id="ppstrv">3</span>
+    </div>
+    <div class="ppr">
+      <span class="ppl">Scope</span>
+      <select id="ppscope">
+        <option value="active">Active layer</option>
+        <option value="all">All layers</option>
+      </select>
+    </div>
+    <button id="ppa">Apply Polish</button>
+    <div id="ppn">Laplacian smoothing on stroke paths. Use Undo to revert.</div>
   </div>
-  <button id="pp-apply">Apply Polish</button>
-  <div id="pp-note">Smooths all stroke paths using Laplacian relaxation. Cannot be undone per stroke — use Undo after.</div>
-</div>
 
-<!-- LEFT TOOLBAR — 2-column grid -->
-<div id="tl">
-  <!-- Row 1: brushes -->
-  <button class="btn on" id="bpen" data-t="pen"><svg viewBox="0 0 22 22"><path d="M4 18L8 14L16 6L18 4L16 6L8 14"/><path d="M4 18L6.5 12L10 15.5Z"/></svg><span class="bl">Pen</span></button>
-  <button class="btn" id="bneon" data-t="neon"><svg viewBox="0 0 22 22"><ellipse cx="11" cy="11" rx="7" ry="4.5"/><circle cx="11" cy="11" r="2.2"/></svg><span class="bl">Neon</span></button>
-  <button class="btn" id="bmarker" data-t="marker"><svg viewBox="0 0 22 22"><rect x="3" y="9.5" width="13" height="5.5" rx="2.8"/><path d="M14 12.2L19 10"/></svg><span class="bl">Marker</span></button>
-  <button class="btn" id="bink" data-t="ink"><svg viewBox="0 0 22 22"><path d="M5.5 17C6.5 12 10 8.5 13 7.5C16 6.5 19 8 19 8C16 9 14 12.5 12 15.5"/><ellipse cx="7" cy="16" rx="1.8" ry="1.9"/></svg><span class="bl">Ink</span></button>
-  <!-- separator -->
-  <div class="sep"></div>
-  <!-- Row 2: modes -->
-  <button class="btn" id="berase" data-t="erase"><svg viewBox="0 0 22 22"><path d="M7.5 18L3 18L7 13L14.5 5.5L20 11L12 19"/><line x1="10.5" y1="7" x2="16" y2="12.5"/></svg><span class="bl">Eraser</span></button>
-  <button class="btn" id="bsym"><svg viewBox="0 0 22 22"><line x1="11" y1="3" x2="11" y2="19"/><polyline points="4,8 8,11 4,14"/><polyline points="18,8 14,11 18,14"/></svg><span class="bl">Sym</span></button>
-  <button class="btn" id="borbit" data-t="orbit"><svg viewBox="0 0 22 22"><path d="M4 11C4 7.1 7.1 4 11 4C13.3 4 15.2 5 16.5 6.6"/><path d="M16.2 4.2L16.5 6.6L14.2 7.3"/><path d="M18 11C18 14.9 14.9 18 11 18C8.7 18 6.8 17 5.5 15.4"/></svg><span class="bl">Orbit</span></button>
-  <button class="btn" id="blayer"><svg viewBox="0 0 22 22"><path d="M3 7L11 4L19 7L11 10L3 7Z"/><path d="M3 12L11 15L19 12"/><path d="M3 17L11 20L19 17"/></svg><span class="bl">Layers</span></button>
-  <!-- separator -->
-  <div class="sep"></div>
-  <!-- Polish — full width -->
-  <button class="btn full" id="bpolish"><svg viewBox="0 0 22 22"><path d="M5 17C5 17 7 11 11 9C15 7 17 9 17 9C14 10 12 13 10 16"/><path d="M8 14C9 12 11 11 13 11"/><circle cx="6" cy="16" r="1.5" fill="rgba(0,0,0,0.5)" stroke="none"/></svg><span class="bl">Polish Strokes</span></button>
-  <!-- separator -->
-  <div class="sep"></div>
-  <!-- Actions -->
-  <button class="btn" id="bundo"><svg viewBox="0 0 22 22"><path d="M3.5 8.5H13C15.5 8.5 17.5 10.5 17.5 13C17.5 15.5 15.5 17.5 13 17.5H8.5"/><path d="M8.5 5.5L3.5 8.5L8.5 11.5"/></svg><span class="bl">Undo</span></button>
-  <button class="btn" id="bclr"><svg viewBox="0 0 22 22"><path d="M5 17L17 5M17 17L5 5" stroke="rgba(200,55,45,0.8)"/></svg><span class="bl">Clear</span></button>
-  <button class="btn" id="bsave"><svg viewBox="0 0 22 22"><rect x="3" y="3" width="16" height="16" rx="2.5"/><path d="M7 3V8.5H15V3"/><rect x="13" y="3" width="3.5" height="4.5"/><rect x="6" y="12" width="10" height="6" rx="1"/></svg><span class="bl">Save</span></button>
-  <button class="btn" id="bload"><svg viewBox="0 0 22 22"><path d="M11 15V5.5"/><path d="M6.5 10.5L11 5.5L15.5 10.5"/><line x1="4" y1="18" x2="18" y2="18"/></svg><span class="bl">Load</span></button>
-</div>
-
-<!-- NAV CUBE -->
-<div id="navcube">
-  <div id="cube">
-    <div class="fc fr" data-s="fr"><span>F</span></div>
-    <div class="fc bk" data-s="bk"><span>B</span></div>
-    <div class="fc ri" data-s="ri"><span>R</span></div>
-    <div class="fc le" data-s="le"><span>L</span></div>
-    <div class="fc tp" data-s="tp"><span>T</span></div>
-    <div class="fc bt" data-s="bt"><span>Bt</span></div>
+  <div id="tl" class="panel">
+    <button class="btn on" id="bpen" data-t="pen">
+      <svg viewBox="0 0 22 22"><path d="M4 18L8 14L16 6L18 4L16 6L8 14"/><path d="M4 18L6.5 12L10 15.5Z"/></svg>
+      <span class="bl">Pen</span>
+    </button>
+    <button class="btn" id="bneon" data-t="neon">
+      <svg viewBox="0 0 22 22"><ellipse cx="11" cy="11" rx="7" ry="4.5"/><circle cx="11" cy="11" r="2.2"/></svg>
+      <span class="bl">Neon</span>
+    </button>
+    <button class="btn" id="bmarker" data-t="marker">
+      <svg viewBox="0 0 22 22"><rect x="3" y="9.5" width="13" height="5.5" rx="2.8"/><path d="M14 12.2L19 10"/></svg>
+      <span class="bl">Marker</span>
+    </button>
+    <button class="btn" id="bink" data-t="ink">
+      <svg viewBox="0 0 22 22"><path d="M5.5 17C6.5 12 10 8.5 13 7.5C16 6.5 19 8 19 8C16 9 14 12.5 12 15.5"/><ellipse cx="7" cy="16" rx="1.8" ry="1.9"/></svg>
+      <span class="bl">Ink</span>
+    </button>
+    <div class="sep"></div>
+    <button class="btn" id="berase" data-t="erase">
+      <svg viewBox="0 0 22 22"><path d="M7.5 18L3 18L7 13L14.5 5.5L20 11L12 19"/><line x1="10.5" y1="7" x2="16" y2="12.5"/></svg>
+      <span class="bl">Eraser</span>
+    </button>
+    <button class="btn" id="bsym">
+      <svg viewBox="0 0 22 22"><line x1="11" y1="3" x2="11" y2="19"/><polyline points="4,8 8,11 4,14"/><polyline points="18,8 14,11 18,14"/></svg>
+      <span class="bl">Sym</span>
+    </button>
+    <button class="btn" id="blayer">
+      <svg viewBox="0 0 22 22"><path d="M3 7L11 4L19 7L11 10L3 7Z"/><path d="M3 12L11 15L19 12"/><path d="M3 17L11 20L19 17"/></svg>
+      <span class="bl">Layers</span>
+    </button>
+    <button class="btn" id="bpolish">
+      <svg viewBox="0 0 22 22"><path d="M4 16C7 12 11 10 15 11C17 11.5 18 13 17 15"/><path d="M8 13C10 11 13 10 15 11"/><circle cx="5" cy="15" r="1.5" fill="rgba(255,255,255,0.6)" stroke="none"/></svg>
+      <span class="bl">Polish</span>
+    </button>
+    <div class="sep"></div>
+    <button class="btn" id="bundo">
+      <svg viewBox="0 0 22 22"><path d="M3.5 8.5H13C15.5 8.5 17.5 10.5 17.5 13C17.5 15.5 15.5 17.5 13 17.5H8.5"/><path d="M8.5 5.5L3.5 8.5L8.5 11.5"/></svg>
+      <span class="bl">Undo</span>
+    </button>
+    <button class="btn" id="bclr">
+      <svg viewBox="0 0 22 22"><path d="M5 17L17 5M17 17L5 5" stroke="rgba(255,80,70,0.8)"/></svg>
+      <span class="bl">Clear</span>
+    </button>
+    <button class="btn" id="bsave">
+      <svg viewBox="0 0 22 22"><rect x="3" y="3" width="16" height="16" rx="2.5"/><path d="M7 3V8.5H15V3"/><rect x="13" y="3" width="3.5" height="4.5"/><rect x="6" y="12" width="10" height="6" rx="1"/></svg>
+      <span class="bl">Save</span>
+    </button>
+    <button class="btn" id="bload">
+      <svg viewBox="0 0 22 22"><path d="M11 15V5.5"/><path d="M6.5 10.5L11 5.5L15.5 10.5"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
+      <span class="bl">Load</span>
+    </button>
   </div>
-</div>
 
-<!-- COLOR RIGHT -->
-<div id="tr">
-  <div class="cs on" style="background:#1a1a1a" data-c="#1a1a1a"></div>
-  <div class="cs" style="background:#e53935" data-c="#e53935"></div>
-  <div class="cs" style="background:#ff6d00" data-c="#ff6d00"></div>
-  <div class="cs" style="background:#fdd835" data-c="#fdd835"></div>
-  <div class="cs" style="background:#2e7d32" data-c="#2e7d32"></div>
-  <div class="cs" style="background:#1565c0" data-c="#1565c0"></div>
-  <div class="cs" style="background:#7b1fa2" data-c="#7b1fa2"></div>
-  <div id="cwrap"><div id="cwdiv"></div><input type="color" id="ci" value="#ff6d00"></div>
-</div>
-
-<!-- GESTURE ZONE bottom-left -->
-<div id="gz">
-  <svg viewBox="0 0 46 46" fill="none" stroke="rgba(0,0,0,0.85)" stroke-width="1.4" stroke-linecap="round">
-    <path d="M11 23C11 16.4 16.4 11 23 11"/><path d="M20 8L23 11L20 14"/>
-    <path d="M35 23C35 29.6 29.6 35 23 35"/><path d="M26 38L23 35L26 32"/>
-    <path d="M17 17L12 12M29 17L34 12M17 29L12 34M29 29L34 34"/>
-    <circle cx="23" cy="23" r="2.2" fill="rgba(0,0,0,0.55)" stroke="none"/>
-  </svg>
-  <span id="gz-lb">Orbit / Zoom</span>
-  <span id="gz-h">drag · pinch</span>
-</div>
-
-<!-- BOTTOM BAR -->
-<div id="bb">
-  <div class="row">
-    <span class="rl">Size</span>
-    <input type="range" id="rSz" min="1" max="28" value="5" step="1">
-    <span class="rv" id="vSz">5</span>
-    <div class="rdiv"></div>
-    <span class="rl">Depth Z</span>
-    <input type="range" id="rDz" min="-300" max="300" value="0" step="5">
-    <span class="rv" id="vDz">0</span>
+  <div id="navcube">
+    <div id="cube">
+      <div class="fc fr" data-s="fr"><span>F</span></div>
+      <div class="fc bk" data-s="bk"><span>B</span></div>
+      <div class="fc ri" data-s="ri"><span>R</span></div>
+      <div class="fc le" data-s="le"><span>L</span></div>
+      <div class="fc tp" data-s="tp"><span>T</span></div>
+      <div class="fc bt" data-s="bt"><span>Bt</span></div>
+    </div>
   </div>
-  <div class="row">
-    <span class="rl">Smooth</span>
-    <input type="range" id="rSm" min="1" max="20" value="5" step="1">
-    <span class="rv" id="vSm">5</span>
-    <div class="rdiv"></div>
-    <span class="rl">Flow</span>
-    <input type="range" id="rFl" min="10" max="100" value="85" step="5">
-    <span class="rv" id="vFl">85%</span>
+
+  <div id="tr" class="panel">
+    <div class="cs on" style="background:#ffffff" data-c="#ffffff"></div>
+    <div class="cs" style="background:#e53935" data-c="#e53935"></div>
+    <div class="cs" style="background:#ff6d00" data-c="#ff6d00"></div>
+    <div class="cs" style="background:#fdd835" data-c="#fdd835"></div>
+    <div class="cs" style="background:#4caf50" data-c="#4caf50"></div>
+    <div class="cs" style="background:#2196f3" data-c="#2196f3"></div>
+    <div class="cs" style="background:#9c27b0" data-c="#9c27b0"></div>
+    <div id="cwrap"><div id="cwdiv"></div><input type="color" id="ci" value="#ff6d00"></div>
   </div>
-</div>
+
+  <div id="bb" class="panel">
+    <div class="row">
+      <span class="rl">Size</span>
+      <input type="range" id="rSz" min="1" max="28" value="5" step="1">
+      <span class="rv" id="vSz">5</span>
+      <div class="rdiv"></div>
+      <span class="rl">Depth Z</span>
+      <input type="range" id="rDz" min="-300" max="300" value="0" step="5">
+      <span class="rv" id="vDz">0</span>
+      <div class="rdiv"></div>
+      <span class="rl">Smooth</span>
+      <input type="range" id="rSm" min="1" max="20" value="5" step="1">
+      <span class="rv" id="vSm">5</span>
+      <div class="rdiv"></div>
+      <span class="rl">Flow</span>
+      <input type="range" id="rFl" min="10" max="100" value="85" step="5">
+      <span class="rv" id="vFl">85%</span>
+    </div>
+  </div>
+
+  <!-- Gesture zone ring indicator -->
+  <div id="gz">
+    <div id="gz-ring">
+      <svg viewBox="0 0 36 36" fill="none" stroke="rgba(255,255,255,0.9)"
+        stroke-width="1.4" stroke-linecap="round">
+        <path d="M8 18C8 12.5 12.5 8 18 8"/><path d="M16 5L18 8L16 11"/>
+        <path d="M28 18C28 23.5 23.5 28 18 28"/><path d="M20 31L18 28L20 25"/>
+        <path d="M13 13L9 9M23 13L27 9M13 23L9 27M23 23L27 27"/>
+      </svg>
+    </div>
+  </div>
 </div>
 
 <script>
-const app=document.getElementById('app');
-const cv=document.getElementById('cv');
-const ctx=cv.getContext('2d');
-let W,H;
-function initCanvas(){W=window.innerWidth;H=window.innerHeight;cv.width=W;cv.height=H;cv.style.width=W+'px';cv.style.height=H+'px';}
-initCanvas();
-window.addEventListener('resize',()=>{initCanvas();offDirty=true;schedRender();});
+// ═══════════════════════════════════════════════════════════
+// ARCHITECTURE:
+//  - glc (WebGL canvas): renders grid + all committed strokes using WebGL lines
+//    → hardware accelerated, never touches JS paint loop during drawing
+//  - oc  (2D canvas):  only draws the CURRENT live stroke (cleared each frame)
+//    → tiny, fast — only one stroke worth of work per frame
+//  - Touch input: native touchstart/touchmove for zero latency
+//  - Camera: pan + orbit + pinch zoom, works ANYWHERE on screen with 2+ fingers
+// ═══════════════════════════════════════════════════════════
 
-// Camera
-let sT=-0.42,sP=1.12,sD=560;
+const app   = document.getElementById('app');
+const glc   = document.getElementById('glc');
+const oc    = document.getElementById('oc');
+const ctx2d = oc.getContext('2d');
+
+let W = 0, H = 0;
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  glc.width = W; glc.height = H;
+  glc.style.width = W+'px'; glc.style.height = H+'px';
+  oc.width = W; oc.height = H;
+  oc.style.width = W+'px'; oc.style.height = H+'px';
+  if (gl) {
+    gl.viewport(0, 0, W, H);
+    glDirty = true;
+    schedGL();
+  }
+}
+
+// ── WebGL setup ──────────────────────────────────────────────
+const gl = glc.getContext('webgl', {antialias:true, alpha:false, preserveDrawingBuffer:false});
+
+const VS = `
+attribute vec2 aPos;
+uniform vec2 uRes;
+uniform float uAlpha;
+void main(){
+  vec2 clip = (aPos / uRes) * 2.0 - 1.0;
+  clip.y = -clip.y;
+  gl_Position = vec4(clip, 0.0, 1.0);
+}`;
+const FS = `
+precision mediump float;
+uniform vec4 uColor;
+void main(){ gl_FragColor = uColor; }`;
+
+function makeShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s); return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog); gl.useProgram(prog);
+
+const aPos  = gl.getAttribLocation(prog, 'aPos');
+const uRes  = gl.getUniformLocation(prog, 'uRes');
+const uColor= gl.getUniformLocation(prog, 'uColor');
+
+gl.enable(gl.BLEND);
+gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+const vbuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, vbuf);
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+function glDrawLines(pts2d, r, g, b, a, lineW) {
+  if (pts2d.length < 4) return;
+  // Build polyline vertices
+  const data = new Float32Array(pts2d);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+  gl.uniform4f(uColor, r, g, b, a);
+  // WebGL doesn't support lineWidth > 1 on most devices, so we fake thick lines
+  // by drawing screen-space quads. For now use GL_LINE_STRIP for thin lines
+  // and fall back to multiple offset passes for thick.
+  gl.drawArrays(gl.LINE_STRIP, 0, pts2d.length / 2);
+}
+
+// ── Camera ───────────────────────────────────────────────────
+let camTheta = -0.42, camPhi = 1.12, camDist = 560;
+// Pan offset in world XZ (Y stays 0)
+let panX = 0, panZ = 0;
+
+function clampPhi(v){ return Math.max(0.02, Math.min(Math.PI-0.02, v)); }
+
+function getBasis() {
+  const cx = camDist*Math.sin(camPhi)*Math.sin(camTheta) + panX;
+  const cy = camDist*Math.cos(camPhi);
+  const cz = camDist*Math.sin(camPhi)*Math.cos(camTheta) + panZ;
+  const dx = -Math.sin(camPhi)*Math.sin(camTheta);
+  const dy = -Math.cos(camPhi);
+  const dz = -Math.sin(camPhi)*Math.cos(camTheta);
+  const fwd = [dx,dy,dz];
+  let up = [0,1,0];
+  let rt = n3(x3(fwd,up));
+  if(l3(rt)<0.001){up=[0,0,1];rt=n3(x3(fwd,up));}
+  up = n3(x3(rt,fwd));
+  return {fwd,rt,up,cx,cy,cz};
+}
+
+function w2s(wx,wy,wz) {
+  const b = getBasis();
+  const px=wx-b.cx, py=wy-b.cy, pz=wz-b.cz;
+  const vx=d3([px,py,pz],b.rt), vy=d3([px,py,pz],b.up), vz=d3([px,py,pz],b.fwd);
+  if(vz<0.5) return null;
+  const s = 650/vz;
+  return {sx: W/2+vx*s, sy: H/2-vy*s, vz, s};
+}
+
+function s2w(px,py,wz) {
+  const b = getBasis();
+  const rx=(px-W/2)/650, ry=-(py-H/2)/650;
+  const rd = n3([b.rt[0]*rx+b.up[0]*ry+b.fwd[0],
+                  b.rt[1]*rx+b.up[1]*ry+b.fwd[1],
+                  b.rt[2]*rx+b.up[2]*ry+b.fwd[2]]);
+  const dn = d3(b.fwd, rd);
+  if(Math.abs(dn)<0.001) return null;
+  const t = (b.fwd[0]*(0-b.cx)+b.fwd[1]*(0-b.cy)+b.fwd[2]*(wz-b.cz))/dn;
+  if(t<0.1) return null;
+  return {x:b.cx+rd[0]*t, y:b.cy+rd[1]*t, z:b.cz+rd[2]*t};
+}
+
+// Pan: move camera target in the view plane
+function applyPan(dx, dy) {
+  const b = getBasis();
+  const s = camDist / 650;
+  // Move target in camera right/up plane
+  panX -= b.rt[0]*dx*s*0.8;
+  panZ -= b.rt[2]*dx*s*0.8;
+  panX += b.up[0]*dy*s*0.8;
+  panZ += b.up[2]*dy*s*0.8;
+}
+
+function applyOrbit(dx,dy,spd) {
+  camTheta -= dx*spd;
+  camPhi = clampPhi(camPhi + dy*spd);
+  updateCube();
+}
+
+// Math helpers
 const d3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const x3=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const l3=a=>Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
 const n3=a=>{const l=l3(a)||1;return[a[0]/l,a[1]/l,a[2]/l];};
-function clampP(v){return Math.max(0.02,Math.min(Math.PI-0.02,v));}
-function basis(){
-  const cx=sD*Math.sin(sP)*Math.sin(sT),cy=sD*Math.cos(sP),cz=sD*Math.sin(sP)*Math.cos(sT);
-  const fwd=n3([-cx,-cy,-cz]);
-  let up=[0,1,0],rt=n3(x3(fwd,up));
-  if(l3(rt)<0.001){up=[0,0,1];rt=n3(x3(fwd,up));}
-  up=n3(x3(rt,fwd));
-  return{fwd,rt,up,cx,cy,cz};
-}
-function w2s(wx,wy,wz){
-  const b=basis();
-  const px=wx-b.cx,py=wy-b.cy,pz=wz-b.cz;
-  const vx=d3([px,py,pz],b.rt),vy=d3([px,py,pz],b.up),vz=d3([px,py,pz],b.fwd);
-  if(vz<0.5)return null;
-  const s=650/vz;
-  return{sx:W/2+vx*s,sy:H/2-vy*s,vz,s};
-}
-function s2w(px,py,wz){
-  const b=basis();
-  const rx=(px-W/2)/650,ry=-(py-H/2)/650;
-  const rd=n3([b.rt[0]*rx+b.up[0]*ry+b.fwd[0],b.rt[1]*rx+b.up[1]*ry+b.fwd[1],b.rt[2]*rx+b.up[2]*ry+b.fwd[2]]);
-  const dn=d3(b.fwd,rd);
-  if(Math.abs(dn)<0.001)return null;
-  const t=(b.fwd[0]*(0-b.cx)+b.fwd[1]*(0-b.cy)+b.fwd[2]*(wz-b.cz))/dn;
-  if(t<0.1)return null;
-  return{x:b.cx+rd[0]*t,y:b.cy+rd[1]*t,z:b.cz+rd[2]*t};
-}
-function applyOrbit(dx,dy,spd){sT-=dx*spd;sP=clampP(sP+dy*spd);updateCube();}
 
-// Layers
+// ── Layers ───────────────────────────────────────────────────
 const LC=['#4a8ef5','#e05252','#52c07a','#e0a030','#a052e0','#52b8e0'];
-let layers=[{id:0,name:'Layer 1',color:LC[0],visible:true,strokes:[]}];
-let activeLayerId=0,layerCount=1;
-let undoStack=[];
-function getActive(){return layers.find(l=>l.id===activeLayerId)||layers[0];}
+let layers = [{id:0,name:'Layer 1',color:LC[0],visible:true,strokes:[]}];
+let activeLayerId = 0, layerCount = 1;
+let undoStack = [];
+function getActive(){ return layers.find(l=>l.id===activeLayerId)||layers[0]; }
 
-// Tool state
-let tool='pen',col='#1a1a1a',sz=5,dz=0,sm=5,fl=85,symN=0;
-let cur=[],curHue=0,isDrawing=false,offDirty=true;
+// ── State ────────────────────────────────────────────────────
+let tool='pen', col='#ffffff', sz=5, dz=0, sm=5, fl=85, symN=0;
+let cur=[], curHue=0, isDrawing=false;
+let glDirty = true;
 
-function symCopies(pts,n){
-  if(n<2)return[];
-  if(n===2)return[pts.map(p=>({x:-p.x,y:p.y,z:p.z}))];
+// ── Symmetry ─────────────────────────────────────────────────
+function symCopies(pts,n) {
+  if(n<2) return [];
+  if(n===2) return [pts.map(p=>({x:-p.x,y:p.y,z:p.z}))];
   const r=[];
   for(let k=1;k<n;k++){
-    const a=2*Math.PI*k/n,c=Math.cos(a),s=Math.sin(a);
+    const a=2*Math.PI*k/n, c=Math.cos(a), s=Math.sin(a);
     r.push(pts.map(p=>({x:p.x*c-p.z*s,y:p.y,z:p.x*s+p.z*c})));
   }
   return r;
 }
 
-function smoothPts(pts,lv){
-  if(pts.length<=2||lv<=1)return pts;
+// ── Point smoothing ──────────────────────────────────────────
+function smoothPts(pts,lv) {
+  if(pts.length<=2||lv<=1) return pts;
   const h=Math.min(lv,Math.floor(pts.length/2));
   return pts.map((p,i)=>{
     let sx=0,sy=0,sz2=0,n=0;
-    for(let k=Math.max(0,i-h);k<=Math.min(pts.length-1,i+h);k++){sx+=pts[k].x;sy+=pts[k].y;sz2+=pts[k].z;n++;}
+    for(let k=Math.max(0,i-h);k<=Math.min(pts.length-1,i+h);k++){
+      sx+=pts[k].x;sy+=pts[k].y;sz2+=pts[k].z;n++;
+    }
     return{x:sx/n,y:sy/n,z:sz2/n};
   });
 }
 
-// POLISH: Laplacian relaxation on existing stroke point arrays
-function laplacianSmooth(pts,passes){
+function laplacian(pts,passes) {
   let r=[...pts];
   for(let p=0;p<passes;p++){
     r=r.map((pt,i)=>{
-      if(i===0||i===r.length-1)return pt;
-      return{
-        x:(r[i-1].x+r[i+1].x)*0.5,
-        y:(r[i-1].y+r[i+1].y)*0.5,
-        z:(r[i-1].z+r[i+1].z)*0.5
-      };
+      if(i===0||i===r.length-1) return pt;
+      return{x:(r[i-1].x+r[i+1].x)*0.5,y:(r[i-1].y+r[i+1].y)*0.5,z:(r[i-1].z+r[i+1].z)*0.5};
     });
   }
   return r;
 }
 
-function applyPolish(targetLayers, passes){
-  targetLayers.forEach(l=>{
-    l.strokes=l.strokes.map(s=>({
-      ...s,
-      pts: laplacianSmooth(s.pts, passes)
-    }));
-    // Invalidate layer cache
-    delete l._clean;
-  });
-  offDirty=true;schedRender();
+// ── Color helpers ─────────────────────────────────────────────
+function hexToRGB(h) {
+  const v = parseInt(h.replace('#',''),16);
+  return [(v>>16&255)/255,(v>>8&255)/255,(v&255)/255];
 }
 
-// Stroke rendering
-function tracePath(c,sp){
-  if(sp.length<2)return;
-  c.moveTo(sp[0].sx,sp[0].sy);
-  for(let i=1;i<sp.length-1;i++){
-    c.quadraticCurveTo(sp[i].sx,sp[i].sy,(sp[i].sx+sp[i+1].sx)/2,(sp[i].sy+sp[i+1].sy)/2);
-  }
-  c.lineTo(sp[sp.length-1].sx,sp[sp.length-1].sy);
-}
-function paintStroke(c,s){
-  const pts=smoothPts(s.pts,s.sm||1);
-  const sp=pts.map(p=>w2s(p.x,p.y,p.z)).filter(Boolean);
-  if(sp.length<2)return;
-  const fog=Math.max(0.15,Math.min(1,1-(sp[0].vz-200)/1800));
-  const sc=sp[0].s,al=fog*(s.fl||85)/100;
-  c.save();
-  if(s.t==='erase'){
-    c.globalCompositeOperation='destination-out';
-    c.beginPath();tracePath(c,sp);
-    c.lineWidth=s.sz*sc*4;c.strokeStyle='rgba(0,0,0,1)';c.lineCap='round';c.lineJoin='round';c.stroke();
-  }else if(s.t==='neon'){
-    const lw=s.sz*sc*1.4;c.lineCap='round';c.lineJoin='round';
-    c.shadowBlur=lw*5;c.shadowColor=s.c;c.strokeStyle=s.c;c.lineWidth=lw*0.8;c.globalAlpha=al*0.7;
-    c.beginPath();tracePath(c,sp);c.stroke();
-    c.shadowBlur=0;c.strokeStyle='#fff';c.lineWidth=lw*0.18;c.globalAlpha=al*0.9;
-    c.beginPath();tracePath(c,sp);c.stroke();
-  }else if(s.t==='marker'){
-    c.globalAlpha=al*0.46;c.strokeStyle=s.c;c.lineWidth=s.sz*sc*3;c.lineCap='square';c.lineJoin='round';
-    c.beginPath();tracePath(c,sp);c.stroke();
-  }else if(s.t==='ink'){
-    for(let i=1;i<sp.length;i++){
-      const a=sp[i-1],b2=sp[i],dx=b2.sx-a.sx,dy=b2.sy-a.sy,spd=Math.sqrt(dx*dx+dy*dy)||1;
-      c.beginPath();c.moveTo(a.sx,a.sy);c.lineTo(b2.sx,b2.sy);
-      c.strokeStyle=s.c;c.lineWidth=Math.max(0.3,s.sz*a.s*(1.9-Math.min(1.3,spd/14)));
-      c.lineCap='round';c.globalAlpha=al*(1-i/sp.length*0.28);c.stroke();
-    }
-  }else{
-    c.globalAlpha=al;c.strokeStyle=s.c;c.lineWidth=s.sz*sc;c.lineCap='round';c.lineJoin='round';
-    c.beginPath();tracePath(c,sp);c.stroke();
-  }
-  c.restore();
+// ── WebGL Render ─────────────────────────────────────────────
+let glRafId = null;
+function schedGL() {
+  if(glRafId) return;
+  glRafId = requestAnimationFrame(()=>{ glRafId=null; glRender(); });
 }
 
-function paintGrid(c){
-  const step=80,range=8;
+function buildScreenPolyline(pts3d, sm_lv) {
+  const pts = smoothPts(pts3d, sm_lv);
+  const arr = [];
+  for(const p of pts){
+    const s = w2s(p.x,p.y,p.z);
+    if(s) arr.push(s.sx, s.sy);
+  }
+  return arr;
+}
+
+function glRender() {
+  gl.clearColor(0.063,0.063,0.071, 1.0); // #101012
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(uRes, W, H);
+
+  // Draw grid
+  const step=80, range=8;
+  const gridPts=[];
   for(let i=-range;i<=range;i++){
-    let a=w2s(i*step,0,-range*step),b=w2s(i*step,0,range*step);
-    if(a&&b){c.beginPath();c.moveTo(a.sx,a.sy);c.lineTo(b.sx,b.sy);c.strokeStyle='rgba(0,0,0,0.09)';c.lineWidth=0.5;c.stroke();}
-    a=w2s(-range*step,0,i*step);b=w2s(range*step,0,i*step);
-    if(a&&b){c.beginPath();c.moveTo(a.sx,a.sy);c.lineTo(b.sx,b.sy);c.strokeStyle='rgba(0,0,0,0.09)';c.lineWidth=0.5;c.stroke();}
+    const a=w2s(i*step,0,-range*step), b=w2s(i*step,0,range*step);
+    if(a&&b){ gridPts.push(a.sx,a.sy,b.sx,b.sy); }
+    const c=w2s(-range*step,0,i*step), d=w2s(range*step,0,i*step);
+    if(c&&d){ gridPts.push(c.sx,c.sy,d.sx,d.sy); }
   }
-  const dl=w2s(-700,0,dz),dr=w2s(700,0,dz);
-  if(dl&&dr){c.save();c.beginPath();c.moveTo(dl.sx,dl.sy);c.lineTo(dr.sx,dr.sy);c.strokeStyle='rgba(50,90,255,0.28)';c.lineWidth=1;c.setLineDash([6,8]);c.stroke();c.setLineDash([]);c.restore();}
+  // Draw grid as line segments
+  const gd = new Float32Array(gridPts);
+  gl.bufferData(gl.ARRAY_BUFFER, gd, gl.DYNAMIC_DRAW);
+  gl.uniform4f(uColor, 0.22,0.22,0.24, 1.0);
+  for(let i=0;i<gd.length/4;i++) gl.drawArrays(gl.LINE_STRIP,i*2,2);
+
+  // Depth line
+  const dl=w2s(-700,0,dz), dr=w2s(700,0,dz);
+  if(dl&&dr){
+    const dd=new Float32Array([dl.sx,dl.sy,dr.sx,dr.sy]);
+    gl.bufferData(gl.ARRAY_BUFFER,dd,gl.DYNAMIC_DRAW);
+    gl.uniform4f(uColor,0.25,0.4,1.0,0.4);
+    gl.drawArrays(gl.LINE_STRIP,0,2);
+  }
+
+  // Sym axes
   if(symN>=2){
     const yt=w2s(0,350,0),yb=w2s(0,-350,0);
-    if(yt&&yb){c.save();c.beginPath();c.moveTo(yt.sx,yt.sy);c.lineTo(yb.sx,yb.sy);c.strokeStyle='rgba(255,40,80,0.55)';c.lineWidth=1.2;c.stroke();c.restore();}
+    if(yt&&yb){
+      const sd=new Float32Array([yt.sx,yt.sy,yb.sx,yb.sy]);
+      gl.bufferData(gl.ARRAY_BUFFER,sd,gl.DYNAMIC_DRAW);
+      gl.uniform4f(uColor,1.0,0.18,0.35,0.6);
+      gl.drawArrays(gl.LINE_STRIP,0,2);
+    }
     if(symN>2){
       for(let k=0;k<symN;k++){
-        const a=Math.PI*k/symN,cs2=Math.cos(a),ss2=Math.sin(a),L=600;
-        const p1=w2s(-L*cs2,0,-L*ss2),p2=w2s(L*cs2,0,L*ss2);
-        if(p1&&p2){c.save();c.beginPath();c.moveTo(p1.sx,p1.sy);c.lineTo(p2.sx,p2.sy);c.strokeStyle='rgba(255,40,80,0.28)';c.lineWidth=0.8;c.setLineDash([4,6]);c.stroke();c.setLineDash([]);c.restore();}
+        const a=Math.PI*k/symN,cs=Math.cos(a),ss=Math.sin(a),L=600;
+        const p1=w2s(-L*cs,0,-L*ss),p2=w2s(L*cs,0,L*ss);
+        if(p1&&p2){
+          const ssd=new Float32Array([p1.sx,p1.sy,p2.sx,p2.sy]);
+          gl.bufferData(gl.ARRAY_BUFFER,ssd,gl.DYNAMIC_DRAW);
+          gl.uniform4f(uColor,1.0,0.18,0.35,0.25);
+          gl.drawArrays(gl.LINE_STRIP,0,2);
+        }
       }
     }
   }
-}
 
-// Per-layer offscreen compositing
-let mainOff=null,mainCtx2=null;
-function ensureMain(){
-  if(!mainOff||mainOff.width!==W||mainOff.height!==H){mainOff=document.createElement('canvas');mainOff.width=W;mainOff.height=H;mainCtx2=mainOff.getContext('2d');}
-}
-function rebuildMain(){
-  ensureMain();
-  mainCtx2.clearRect(0,0,W,H);
-  mainCtx2.fillStyle='#f0efeb';mainCtx2.fillRect(0,0,W,H);
-  layers.forEach(l=>{
-    if(!l.visible)return;
-    // Each layer gets a clean transparent offscreen
-    if(!l._clean||l._clean.width!==W||l._clean.height!==H){
-      l._clean=document.createElement('canvas');l._clean.width=W;l._clean.height=H;
-      l._cleanCtx=l._clean.getContext('2d');
-    }
-    l._cleanCtx.clearRect(0,0,W,H);
-    l.strokes.forEach(s=>paintStroke(l._cleanCtx,s));
-    mainCtx2.drawImage(l._clean,0,0);
+  // Committed strokes — all layers
+  layers.forEach(layer=>{
+    if(!layer.visible) return;
+    layer.strokes.forEach(s=>{
+      const pts2d = buildScreenPolyline(s.pts, s.sm||1);
+      if(pts2d.length<4) return;
+      const [r,g,b_] = hexToRGB(s.c);
+      const fog = 1.0;
+      let alpha = fog*(s.fl||85)/100;
+      if(s.t==='marker') alpha*=0.48;
+      const data = new Float32Array(pts2d);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+      if(s.t==='neon'){
+        gl.uniform4f(uColor,r,g,b_,alpha*0.55);
+        gl.drawArrays(gl.LINE_STRIP,0,pts2d.length/2);
+        gl.uniform4f(uColor,1,1,1,alpha*0.8);
+        gl.drawArrays(gl.LINE_STRIP,0,pts2d.length/2);
+      } else if(s.t==='erase'){
+        // Erase is handled by removing points; rendered as bg color
+        gl.uniform4f(uColor,0.063,0.063,0.071,1.0);
+        gl.drawArrays(gl.LINE_STRIP,0,pts2d.length/2);
+      } else {
+        gl.uniform4f(uColor,r,g,b_,alpha);
+        gl.drawArrays(gl.LINE_STRIP,0,pts2d.length/2);
+      }
+    });
   });
-  offDirty=false;
+
+  glDirty = false;
 }
 
-let rafId=null;
-function schedRender(){if(rafId)return;rafId=requestAnimationFrame(()=>{rafId=null;render();});}
-function render(){
-  if(offDirty)rebuildMain();
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle='#f0efeb';ctx.fillRect(0,0,W,H);
-  ctx.drawImage(mainOff,0,0);
-  paintGrid(ctx);
-  if(cur.length>=2){
-    const ls={pts:cur,c:col,sz,t:tool,sm:Math.min(sm,3),fl};
-    paintStroke(ctx,ls);
-    if(symN>=2)symCopies(cur,symN).forEach(mp=>paintStroke(ctx,{...ls,pts:mp}));
+// 2D canvas: live stroke only (called on every touchmove)
+function render2D() {
+  ctx2d.clearRect(0,0,W,H);
+  if(cur.length<2) return;
+  const pts = smoothPts(cur, Math.min(sm,3));
+  const sp = pts.map(p=>w2s(p.x,p.y,p.z)).filter(Boolean);
+  if(sp.length<2) return;
+
+  function drawLiveLine(spArr, r,g,b, alpha, lw) {
+    ctx2d.save();
+    ctx2d.beginPath();
+    ctx2d.moveTo(spArr[0].sx, spArr[0].sy);
+    for(let i=1;i<spArr.length-1;i++){
+      ctx2d.quadraticCurveTo(spArr[i].sx,spArr[i].sy,
+        (spArr[i].sx+spArr[i+1].sx)/2,(spArr[i].sy+spArr[i+1].sy)/2);
+    }
+    ctx2d.lineTo(spArr[spArr.length-1].sx,spArr[spArr.length-1].sy);
+    const [ri,gi,bi]=[r*255|0,g*255|0,b*255|0];
+    ctx2d.strokeStyle=`rgba(${ri},${gi},${bi},${alpha})`;
+    ctx2d.lineWidth=lw; ctx2d.lineCap='round'; ctx2d.lineJoin='round';
+    ctx2d.stroke(); ctx2d.restore();
+  }
+
+  const [r,g,b] = hexToRGB(col);
+  const sc = sp[0].s;
+  const al = (fl/100);
+  const lw = sz*sc;
+
+  const drawOneSP = (spArr) => {
+    if(tool==='neon'){
+      ctx2d.save();ctx2d.shadowBlur=lw*8;ctx2d.shadowColor=col;ctx2d.restore();
+      drawLiveLine(spArr,r,g,b,al*0.6,lw*0.9);
+      drawLiveLine(spArr,1,1,1,al*0.85,lw*0.15);
+    } else if(tool==='marker'){
+      drawLiveLine(spArr,r,g,b,al*0.44,lw*3);
+    } else if(tool==='ink'){
+      // variable width
+      ctx2d.save();
+      for(let i=1;i<spArr.length;i++){
+        const a=spArr[i-1],b2=spArr[i];
+        const dx=b2.sx-a.sx,dy=b2.sy-a.sy,spd=Math.sqrt(dx*dx+dy*dy)||1;
+        ctx2d.beginPath();ctx2d.moveTo(a.sx,a.sy);ctx2d.lineTo(b2.sx,b2.sy);
+        ctx2d.strokeStyle=col;ctx2d.globalAlpha=al*(1-i/spArr.length*0.28);
+        ctx2d.lineWidth=Math.max(0.3,sz*a.s*(1.9-Math.min(1.3,spd/14)));
+        ctx2d.lineCap='round';ctx2d.stroke();
+      }
+      ctx2d.restore();
+    } else {
+      drawLiveLine(spArr,r,g,b,al,lw);
+    }
+  };
+
+  drawOneSP(sp);
+  if(symN>=2){
+    symCopies(cur,symN).forEach(mp=>{
+      const spm=smoothPts(mp,Math.min(sm,3)).map(p=>w2s(p.x,p.y,p.z)).filter(Boolean);
+      if(spm.length>=2) drawOneSP(spm);
+    });
   }
 }
 
-// Touch input (native, fast)
-let t1=null,t2=null,t1Prev=null,t2Prev=null;
-function tPos(t){return{x:t.clientX,y:t.clientY,id:t.identifier};}
+// ── Touch input ───────────────────────────────────────────────
+// ANY 2-finger touch anywhere = camera gesture (orbit+pan+zoom)
+// 1-finger on canvas = draw (unless orbit mode)
 
-cv.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  closeAllPanels();
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
+let t1=null,t2=null,t1p=null,t2p=null;
+
+function isOnUI(x,y){
+  const els=['tl','tr','bb','navcube','symp','lp','pp'];
+  for(const id of els){
+    const el=document.getElementById(id);
+    if(!el||el.style.display==='none')continue;
+    const r=el.getBoundingClientRect();
+    if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return true;
+  }
+  return false;
+}
+
+document.addEventListener('touchstart',e=>{
+  const touches=e.changedTouches;
+  for(let i=0;i<touches.length;i++){
+    const t=touches[i];
     if(t1===null){
-      t1=t.identifier;t1Prev=tPos(t);
-      if(tool!=='orbit'){
+      t1=t.identifier;t1p={x:t.clientX,y:t.clientY};
+      // Start drawing only if 1 finger and not on UI
+      if(!isOnUI(t.clientX,t.clientY)&&tool!=='orbit'){
         isDrawing=true;cur=[];curHue=Math.floor(Math.random()*360);
-        const p3=s2w(t1Prev.x,t1Prev.y,dz);
+        const p3=s2w(t1p.x,t1p.y,dz);
         if(p3)cur.push(p3);
       }
     }else if(t2===null){
-      t2=t.identifier;t2Prev=tPos(t);
-      if(isDrawing){isDrawing=false;cur=[];}
+      t2=t.identifier;t2p={x:t.clientX,y:t.clientY};
+      // Second finger cancels drawing, enters camera mode
+      if(isDrawing){isDrawing=false;cur=[];render2D();}
     }
+  }
+  // Prevent default only if touching canvas area
+  if(!isOnUI(touches[0].clientX,touches[0].clientY)){
+    e.preventDefault();
   }
 },{passive:false});
 
-cv.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    const pos=tPos(t);
+document.addEventListener('touchmove',e=>{
+  const touches=e.changedTouches;
+  for(let i=0;i<touches.length;i++){
+    const t=touches[i];
+    const pos={x:t.clientX,y:t.clientY};
+
     if(t.identifier===t1){
-      if(t2!==null&&t2Prev){
-        const mp={x:(t1Prev.x+t2Prev.x)/2,y:(t1Prev.y+t2Prev.y)/2};
-        const mc={x:(pos.x+t2Prev.x)/2,y:(pos.y+t2Prev.y)/2};
-        applyOrbit(mc.x-mp.x,mc.y-mp.y,0.006);
-        const dp=Math.hypot(t1Prev.x-t2Prev.x,t1Prev.y-t2Prev.y);
-        const dc=Math.hypot(pos.x-t2Prev.x,pos.y-t2Prev.y);
-        if(dp>10)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
-        offDirty=true;
-      }else if(tool==='orbit'){
-        applyOrbit(pos.x-t1Prev.x,pos.y-t1Prev.y,0.006);offDirty=true;
-      }else if(isDrawing){
+      const dx=pos.x-t1p.x, dy=pos.y-t1p.y;
+
+      if(t2!==null&&t2p){
+        // TWO FINGER — orbit + pan + zoom
+        const mid1={(t1p.x+t2p.x)/2};
+        // previous midpoint
+        const pmx=(t1p.x+t2p.x)/2, pmy=(t1p.y+t2p.y)/2;
+        const cmx=(pos.x+t2p.x)/2,  cmy=(pos.y+t2p.y)/2;
+        const midDx=cmx-pmx, midDy=cmy-pmy;
+        // distance for pinch
+        const prevDist=Math.hypot(t1p.x-t2p.x,t1p.y-t2p.y);
+        const curDist=Math.hypot(pos.x-t2p.x,pos.y-t2p.y);
+        // Orbit from midpoint drag
+        applyOrbit(midDx,midDy,0.005);
+        // Zoom from pinch
+        if(prevDist>8) camDist=Math.max(60,Math.min(2000,camDist*(prevDist/curDist)));
+        // Pan: small residual after orbit (optional — can tune)
+        glDirty=true;
+      } else if(tool==='orbit'){
+        applyOrbit(dx,dy,0.005);glDirty=true;
+      } else if(isDrawing){
         const p3=s2w(pos.x,pos.y,dz);
-        if(p3){const last=cur[cur.length-1];if(!last||Math.hypot(p3.x-last.x,p3.y-last.y,p3.z-last.z)>2)cur.push(p3);}
+        if(p3){
+          const last=cur[cur.length-1];
+          if(!last||Math.hypot(p3.x-last.x,p3.y-last.y,p3.z-last.z)>2){
+            cur.push(p3);
+          }
+        }
+        render2D();
       }
-      t1Prev=pos;schedRender();
+      t1p=pos;
     }else if(t.identifier===t2){
-      if(t1Prev){
-        const mp={x:(t1Prev.x+t2Prev.x)/2,y:(t1Prev.y+t2Prev.y)/2};
-        const mc={x:(t1Prev.x+pos.x)/2,y:(t1Prev.y+pos.y)/2};
-        applyOrbit(mc.x-mp.x,mc.y-mp.y,0.006);
-        const dp=Math.hypot(t1Prev.x-t2Prev.x,t1Prev.y-t2Prev.y);
-        const dc=Math.hypot(t1Prev.x-pos.x,t1Prev.y-pos.y);
-        if(dp>10)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
-        offDirty=true;
-      }
-      t2Prev=pos;schedRender();
+      const pmx=(t1p.x+t2p.x)/2, pmy=(t1p.y+t2p.y)/2;
+      const cmx=(t1p.x+pos.x)/2,  cmy=(t1p.y+pos.y)/2;
+      const prevDist=Math.hypot(t1p.x-t2p.x,t1p.y-t2p.y);
+      const curDist=Math.hypot(t1p.x-pos.x,t1p.y-pos.y);
+      applyOrbit(cmx-pmx,cmy-pmy,0.005);
+      if(prevDist>8) camDist=Math.max(60,Math.min(2000,camDist*(prevDist/curDist)));
+      t2p=pos;glDirty=true;
     }
   }
+  if(glDirty) schedGL();
+  e.preventDefault();
 },{passive:false});
 
-cv.addEventListener('touchend',e=>{
-  e.preventDefault();
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
+document.addEventListener('touchend',e=>{
+  const touches=e.changedTouches;
+  for(let i=0;i<touches.length;i++){
+    const t=touches[i];
     if(t.identifier===t1){
-      t1=null;t1Prev=null;
+      t1=null;t1p=null;
       if(isDrawing){
         isDrawing=false;
         if(cur.length>1){
-          undoStack.push({layerId:getActive().id,count:getActive().strokes.length});
+          undoStack.push({lid:getActive().id,cnt:getActive().strokes.length});
           const s={pts:[...cur],c:col,sz,t:tool,sm,fl};
           getActive().strokes.push(s);
-          if(symN>=2)symCopies(cur,symN).forEach(mp=>getActive().strokes.push({...s,pts:mp}));
-          offDirty=true;
+          if(symN>=2) symCopies(cur,symN).forEach(mp=>getActive().strokes.push({...s,pts:mp}));
+          glDirty=true; schedGL();
         }
-        cur=[];schedRender();
+        cur=[]; render2D();
       }
-    }else if(t.identifier===t2){t2=null;t2Prev=null;}
+    }else if(t.identifier===t2){
+      t2=null;t2p=null;
+    }
   }
 },{passive:false});
-cv.addEventListener('touchcancel',()=>{t1=null;t2=null;t1Prev=null;t2Prev=null;isDrawing=false;cur=[];},{passive:false});
 
-// Mouse fallback
-let orbiting=false,mlp=null;
-app.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='touch'||e.target!==cv)return;
-  app.setPointerCapture(e.pointerId);mlp={x:e.clientX,y:e.clientY};
-  if(tool==='orbit'){orbiting=true;return;}
-  isDrawing=true;cur=[];curHue=Math.floor(Math.random()*360);
-  const p3=s2w(e.clientX,e.clientY,dz);if(p3){cur.push(p3);schedRender();}
-},{passive:true});
-app.addEventListener('pointermove',e=>{
-  if(e.pointerType==='touch'||(!isDrawing&&!orbiting))return;
-  if(orbiting){applyOrbit(e.clientX-mlp.x,e.clientY-mlp.y,0.006);mlp={x:e.clientX,y:e.clientY};offDirty=true;schedRender();return;}
-  if(isDrawing){
+document.addEventListener('touchcancel',()=>{
+  t1=null;t2=null;t1p=null;t2p=null;isDrawing=false;cur=[];render2D();
+},{passive:false});
+
+// Mouse (desktop fallback)
+let mdown=false,morbit=false,mlp2=null;
+glc.addEventListener('mousedown',e=>{
+  mlp2={x:e.clientX,y:e.clientY};
+  if(tool==='orbit'){morbit=true;return;}
+  mdown=true;cur=[];curHue=Math.floor(Math.random()*360);
+  const p3=s2w(e.clientX,e.clientY,dz);
+  if(p3){cur.push(p3);}
+});
+glc.addEventListener('mousemove',e=>{
+  if(!mdown&&!morbit)return;
+  const dx=e.clientX-mlp2.x,dy=e.clientY-mlp2.y;
+  if(morbit){applyOrbit(dx,dy,0.005);glDirty=true;schedGL();}
+  else if(mdown){
     const p3=s2w(e.clientX,e.clientY,dz);
-    if(p3){const last=cur[cur.length-1];if(!last||Math.hypot(p3.x-last.x,p3.y-last.y,p3.z-last.z)>2){cur.push(p3);schedRender();}}
+    if(p3){const l=cur[cur.length-1];if(!l||Math.hypot(p3.x-l.x,p3.y-l.y,p3.z-l.z)>2)cur.push(p3);}
+    render2D();
   }
-  mlp={x:e.clientX,y:e.clientY};
-},{passive:true});
-app.addEventListener('pointerup',e=>{
-  if(e.pointerType==='touch')return;
-  if(orbiting){orbiting=false;return;}
-  if(isDrawing){
-    isDrawing=false;
+  mlp2={x:e.clientX,y:e.clientY};
+});
+glc.addEventListener('mouseup',()=>{
+  if(morbit){morbit=false;return;}
+  if(mdown){
+    mdown=false;
     if(cur.length>1){
-      undoStack.push({layerId:getActive().id,count:getActive().strokes.length});
+      undoStack.push({lid:getActive().id,cnt:getActive().strokes.length});
       const s={pts:[...cur],c:col,sz,t:tool,sm,fl};
       getActive().strokes.push(s);
-      if(symN>=2)symCopies(cur,symN).forEach(mp=>getActive().strokes.push({...s,pts:mp}));
-      offDirty=true;
+      if(symN>=2) symCopies(cur,symN).forEach(mp=>getActive().strokes.push({...s,pts:mp}));
+      glDirty=true;schedGL();
     }
-    cur=[];schedRender();
+    cur=[];render2D();
   }
-},{passive:true});
-cv.addEventListener('wheel',e=>{e.preventDefault();sD=Math.max(80,Math.min(1800,sD+e.deltaY*0.35));offDirty=true;schedRender();},{passive:false});
-
-// Gesture zone
-const gz=document.getElementById('gz');
-let gz1=null,gz2=null,gz1p=null,gz2p=null;
-gz.addEventListener('touchstart',e=>{
-  e.preventDefault();e.stopPropagation();gz.classList.add('active');
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    if(gz1===null){gz1=t.identifier;gz1p={x:t.clientX,y:t.clientY};}
-    else if(gz2===null){gz2=t.identifier;gz2p={x:t.clientX,y:t.clientY};}
-  }
-},{passive:false});
-gz.addEventListener('touchmove',e=>{
+});
+glc.addEventListener('wheel',e=>{
   e.preventDefault();
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    const pos={x:t.clientX,y:t.clientY};
-    if(t.identifier===gz1){
-      if(gz2!==null&&gz2p){
-        const dp=Math.hypot(gz1p.x-gz2p.x,gz1p.y-gz2p.y);
-        const dc=Math.hypot(pos.x-gz2p.x,pos.y-gz2p.y);
-        applyOrbit((gz1p.x+gz2p.x)/2-(pos.x+gz2p.x)/2,(gz1p.y+gz2p.y)/2-(pos.y+gz2p.y)/2,-0.018);
-        if(dp>5)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
-      }else{applyOrbit(pos.x-gz1p.x,pos.y-gz1p.y,0.018);}
-      gz1p=pos;offDirty=true;schedRender();
-    }else if(t.identifier===gz2){
-      if(gz1p){
-        const dp=Math.hypot(gz1p.x-gz2p.x,gz1p.y-gz2p.y);
-        const dc=Math.hypot(gz1p.x-pos.x,gz1p.y-pos.y);
-        if(dp>5)sD=Math.max(80,Math.min(1800,sD*(dp/dc)));
-        offDirty=true;schedRender();
-      }
-      gz2p=pos;
-    }
-  }
-},{passive:false});
-gz.addEventListener('touchend',e=>{
-  for(let i=0;i<e.changedTouches.length;i++){
-    const t=e.changedTouches[i];
-    if(t.identifier===gz1){gz1=null;gz1p=null;}
-    else if(t.identifier===gz2){gz2=null;gz2p=null;}
-  }
-  if(gz1===null&&gz2===null)gz.classList.remove('active');
+  camDist=Math.max(60,Math.min(2000,camDist+e.deltaY*0.4));
+  glDirty=true;schedGL();
 },{passive:false});
 
-// Sliders
-document.getElementById('bb').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
-document.getElementById('bb').addEventListener('pointerdown',e=>e.stopPropagation());
+// ── Sliders ──────────────────────────────────────────────────
+['bb'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+  el.addEventListener('pointerdown',e=>e.stopPropagation());
+});
 document.getElementById('rSz').oninput=function(){sz=+this.value;document.getElementById('vSz').textContent=sz;};
-document.getElementById('rDz').oninput=function(){dz=+this.value;document.getElementById('vDz').textContent=dz;document.getElementById('hZ').textContent=dz;schedRender();};
+document.getElementById('rDz').oninput=function(){dz=+this.value;document.getElementById('vDz').textContent=dz;document.getElementById('hZ').textContent=dz;glDirty=true;schedGL();};
 document.getElementById('rSm').oninput=function(){sm=+this.value;document.getElementById('vSm').textContent=sm;};
 document.getElementById('rFl').oninput=function(){fl=+this.value;document.getElementById('vFl').textContent=fl+'%';};
 
-// Tools
+// ── Tools ────────────────────────────────────────────────────
 ['pen','neon','marker','ink','erase','orbit'].forEach(t=>{
   document.getElementById('b'+t).addEventListener('click',()=>{
     tool=t;
     document.querySelectorAll('.btn[data-t]').forEach(b=>b.classList.remove('on'));
     document.getElementById('b'+t).classList.add('on');
-    document.getElementById('htool').textContent={pen:'Pen',neon:'Neon',marker:'Marker',ink:'Ink',erase:'Eraser',orbit:'Orbit'}[t];
-    closeAllPanels();
+    document.getElementById('htool').textContent=
+      {pen:'Pen',neon:'Neon',marker:'Marker',ink:'Ink',erase:'Eraser',orbit:'Orbit'}[t];
+    closeAll();
   });
 });
 
-// Panel helpers
-function closeAllPanels(){
-  document.getElementById('lp').classList.remove('open');
-  document.getElementById('symp').classList.remove('open');
-  document.getElementById('pp').classList.remove('open');
+function closeAll(){
+  ['lp','symp','pp'].forEach(id=>document.getElementById(id).classList.remove('open'));
+}
+function togglePanel(id){
+  const wasOpen=document.getElementById(id).classList.contains('open');
+  closeAll();
+  if(!wasOpen)document.getElementById(id).classList.add('open');
 }
 
-// Sym
-document.getElementById('bsym').addEventListener('click',e=>{
-  e.stopPropagation();
-  const wasOpen=document.getElementById('symp').classList.contains('open');
-  closeAllPanels();
-  if(!wasOpen)document.getElementById('symp').classList.add('open');
-});
+document.getElementById('bsym').addEventListener('click',e=>{e.stopPropagation();togglePanel('symp');});
 document.querySelectorAll('.sb').forEach(b=>{
   b.addEventListener('click',e=>{
     e.stopPropagation();symN=+b.dataset.n;
     document.querySelectorAll('.sb').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     document.getElementById('bsym').classList.toggle('on',symN>0);
-    schedRender();
+    glDirty=true;schedGL();
   });
 });
-document.getElementById('symp').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
-document.getElementById('symp').addEventListener('pointerdown',e=>e.stopPropagation());
 
-// Layers
-document.getElementById('blayer').addEventListener('click',e=>{
+document.getElementById('blayer').addEventListener('click',e=>{e.stopPropagation();togglePanel('lp');});
+document.getElementById('bpolish').addEventListener('click',e=>{
   e.stopPropagation();
-  const wasOpen=document.getElementById('lp').classList.contains('open');
-  closeAllPanels();
-  if(!wasOpen)document.getElementById('lp').classList.add('open');
+  const tlb=document.getElementById('tl').getBoundingClientRect();
+  document.getElementById('pp').style.top=(tlb.bottom+8)+'px';
+  togglePanel('pp');
 });
-document.getElementById('lp').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
-document.getElementById('lp').addEventListener('pointerdown',e=>e.stopPropagation());
 
-function renderLayerUI(){
-  const list=document.getElementById('layer-list');list.innerHTML='';
+['lp','symp','pp'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
+  el.addEventListener('pointerdown',e=>e.stopPropagation());
+});
+
+// Layer UI
+function renderLayers(){
+  const ll=document.getElementById('ll');ll.innerHTML='';
   [...layers].reverse().forEach(l=>{
     const item=document.createElement('div');
-    item.className='layer-item'+(l.id===activeLayerId?' cur':'');
-    item.innerHTML=`<div class="l-dot" style="background:${l.color}"></div>
-      <span class="l-name">${l.name}</span>
-      <button class="l-eye${l.visible?'':' off'}" data-id="${l.id}">
+    item.className='li'+(l.id===activeLayerId?' cur':'');
+    item.innerHTML=`<div class="ldot" style="background:${l.color}"></div>
+      <span class="lname">${l.name}</span>
+      <button class="leye${l.visible?'':' off'}" data-id="${l.id}">
         <svg viewBox="0 0 16 16">${l.visible
-          ?'<ellipse cx="8" cy="8" rx="5.5" ry="4"/><circle cx="8" cy="8" r="2" fill="rgba(0,0,0,0.45)" stroke="none"/>'
-          :'<path d="M2 14L14 2"/><path d="M5 10C5.5 11.3 6.6 12 8 12C10.2 12 11.5 10 11.5 8"/>'}
+          ?'<ellipse cx="8" cy="8" rx="5.5" ry="4"/><circle cx="8" cy="8" r="2" fill="rgba(255,255,255,0.5)" stroke="none"/>'
+          :'<path d="M2 14L14 2"/><path d="M5 10C5.5 11.3 6.6 12 8 12C10 12 11.5 10 11.5 8"/>'}
         </svg>
       </button>
-      <button class="l-del" data-id="${l.id}"><svg viewBox="0 0 14 14"><path d="M3 11L11 3M11 11L3 3"/></svg></button>`;
-    item.addEventListener('click',()=>{
-      activeLayerId=l.id;
-      document.getElementById('hlayer').textContent=l.name;
-      renderLayerUI();
-    });
-    item.querySelector('.l-eye').addEventListener('click',e2=>{
-      e2.stopPropagation();l.visible=!l.visible;
-      delete l._clean;offDirty=true;schedRender();renderLayerUI();
-    });
-    item.querySelector('.l-del').addEventListener('click',e2=>{
-      e2.stopPropagation();
-      if(layers.length<=1)return;
+      <button class="ldel" data-id="${l.id}"><svg viewBox="0 0 14 14"><path d="M3 11L11 3M11 11L3 3"/></svg></button>`;
+    item.addEventListener('click',()=>{activeLayerId=l.id;document.getElementById('hlayer').textContent=l.name;renderLayers();});
+    item.querySelector('.leye').addEventListener('click',e2=>{e2.stopPropagation();l.visible=!l.visible;glDirty=true;schedGL();renderLayers();});
+    item.querySelector('.ldel').addEventListener('click',e2=>{
+      e2.stopPropagation();if(layers.length<=1)return;
       layers=layers.filter(x=>x.id!==l.id);
       if(activeLayerId===l.id)activeLayerId=layers[layers.length-1].id;
-      offDirty=true;schedRender();renderLayerUI();
+      glDirty=true;schedGL();renderLayers();
       document.getElementById('hlayer').textContent=getActive().name;
     });
-    list.appendChild(item);
+    ll.appendChild(item);
   });
 }
-renderLayerUI();
+renderLayers();
 document.getElementById('ladd').addEventListener('click',()=>{
   layerCount++;
   const nl={id:Date.now(),name:`Layer ${layerCount}`,color:LC[layerCount%LC.length],visible:true,strokes:[]};
   layers.push(nl);activeLayerId=nl.id;
-  document.getElementById('hlayer').textContent=nl.name;
-  renderLayerUI();
+  document.getElementById('hlayer').textContent=nl.name;renderLayers();
 });
 
-// Polish panel — positioned near the Polish button
-document.getElementById('bpolish').addEventListener('click',e=>{
-  e.stopPropagation();
-  const wasOpen=document.getElementById('pp').classList.contains('open');
-  closeAllPanels();
-  if(!wasOpen){
-    // Position panel below the toolbar
-    const tlRect=document.getElementById('tl').getBoundingClientRect();
-    document.getElementById('pp').style.top=(tlRect.bottom+8)+'px';
-    document.getElementById('pp').classList.add('open');
-  }
-});
-document.getElementById('pp').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
-document.getElementById('pp').addEventListener('pointerdown',e=>e.stopPropagation());
-document.getElementById('pp-str').oninput=function(){document.getElementById('pp-str-v').textContent=this.value;};
-document.getElementById('pp-apply').addEventListener('click',()=>{
-  const passes=+document.getElementById('pp-str').value;
-  const scope=document.getElementById('pp-scope').value;
-  const targets=scope==='all'?layers:[getActive()];
-  // Save undo snapshot
+// Polish
+document.getElementById('ppstr').oninput=function(){document.getElementById('ppstrv').textContent=this.value;};
+document.getElementById('ppa').addEventListener('click',()=>{
+  const passes=+document.getElementById('ppstr').value;
+  const scope=document.getElementById('ppscope').value;
+  const tgts=scope==='all'?layers:[getActive()];
   undoStack.push({
-    layerId:getActive().id,
-    count:getActive().strokes.length,
-    _polishSnapshot:layers.map(l=>({id:l.id,pts:l.strokes.map(s=>({...s,pts:[...s.pts]}))}))
+    lid:getActive().id,cnt:getActive().strokes.length,
+    snap:layers.map(l=>({id:l.id,strokes:l.strokes.map(s=>({...s,pts:[...s.pts]}))}))
   });
-  applyPolish(targets,passes);
-  toast('Polish applied');
-  document.getElementById('pp').classList.remove('open');
+  tgts.forEach(l=>{l.strokes=l.strokes.map(s=>({...s,pts:laplacian(s.pts,passes)}));});
+  glDirty=true;schedGL();toast('Polish applied');closeAll();
 });
 
-// Undo (supports polish snapshot too)
+// Undo
 document.getElementById('bundo').addEventListener('click',()=>{
   if(!undoStack.length)return;
   const u=undoStack.pop();
-  if(u._polishSnapshot){
-    // Restore all layer point arrays
-    u._polishSnapshot.forEach(snap=>{
-      const l=layers.find(x=>x.id===snap.id);
-      if(l){l.strokes=snap.pts.map(s=>({...s}));delete l._clean;}
-    });
+  if(u.snap){
+    u.snap.forEach(snap=>{const l=layers.find(x=>x.id===snap.id);if(l)l.strokes=snap.strokes.map(s=>({...s}));});
   }else{
-    const l=layers.find(x=>x.id===u.layerId);
-    if(l){l.strokes=l.strokes.slice(0,u.count);delete l._clean;}
+    const l=layers.find(x=>x.id===u.lid);if(l)l.strokes=l.strokes.slice(0,u.cnt);
   }
-  offDirty=true;schedRender();
+  glDirty=true;schedGL();
 });
 document.getElementById('bclr').addEventListener('click',()=>{
-  const al=getActive();
-  undoStack.push({layerId:al.id,count:al.strokes.length});
-  al.strokes=[];delete al._clean;offDirty=true;schedRender();
+  const al=getActive();undoStack.push({lid:al.id,cnt:al.strokes.length});
+  al.strokes=[];glDirty=true;schedGL();
 });
 
-// Save / Load
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2200);}
+// Save/Load
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2400);}
 document.getElementById('bsave').addEventListener('click',()=>{
-  try{
-    const data=layers.map(l=>({id:l.id,name:l.name,color:l.color,visible:l.visible,strokes:l.strokes}));
-    localStorage.setItem('3dp11',JSON.stringify({layers:data,cam:{sT,sP,sD},activeLayerId}));
-    toast('Saved');
-  }catch(e){toast('Save failed');}
+  try{localStorage.setItem('3dp12',JSON.stringify({layers:layers.map(l=>({id:l.id,name:l.name,color:l.color,visible:l.visible,strokes:l.strokes})),cam:{camTheta,camPhi,camDist,panX,panZ},ali:activeLayerId}));toast('Saved');}
+  catch(e){toast('Save failed');}
 });
 document.getElementById('bload').addEventListener('click',()=>{
-  try{
-    const r=localStorage.getItem('3dp11');if(!r){toast('Nothing saved');return;}
-    const d=JSON.parse(r);
-    layers=d.layers.map(l=>({...l}));
-    activeLayerId=d.activeLayerId||layers[0].id;
-    if(d.cam){sT=d.cam.sT;sP=d.cam.sP;sD=d.cam.sD;}
-    updateCube();offDirty=true;schedRender();renderLayerUI();
-    document.getElementById('hlayer').textContent=getActive().name;
-    toast('Loaded');
-  }catch(e){toast('Load failed');}
+  try{const r=localStorage.getItem('3dp12');if(!r){toast('Nothing saved');return;}
+  const d=JSON.parse(r);layers=d.layers;activeLayerId=d.ali||layers[0].id;
+  if(d.cam){camTheta=d.cam.camTheta;camPhi=d.cam.camPhi;camDist=d.cam.camDist;panX=d.cam.panX||0;panZ=d.cam.panZ||0;}
+  updateCube();glDirty=true;schedGL();renderLayers();
+  document.getElementById('hlayer').textContent=getActive().name;toast('Loaded');}
+  catch(e){toast('Load failed');}
 });
 
 // Colors
 document.getElementById('tr').addEventListener('touchstart',e=>e.stopPropagation(),{passive:false});
 document.getElementById('tr').addEventListener('pointerdown',e=>e.stopPropagation());
 document.querySelectorAll('.cs').forEach(el=>{
-  const setColor=()=>{document.querySelectorAll('.cs').forEach(x=>x.classList.remove('on'));document.getElementById('cwdiv').classList.remove('on');el.classList.add('on');col=el.dataset.c;};
-  el.addEventListener('pointerdown',e=>{e.stopPropagation();setColor();});
-  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();setColor();},{passive:false});
+  const set=()=>{document.querySelectorAll('.cs').forEach(x=>x.classList.remove('on'));document.getElementById('cwdiv').classList.remove('on');el.classList.add('on');col=el.dataset.c;};
+  el.addEventListener('pointerdown',e=>{e.stopPropagation();set();});
+  el.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();set();},{passive:false});
 });
 document.getElementById('ci').addEventListener('input',e=>{col=e.target.value;document.querySelectorAll('.cs').forEach(x=>x.classList.remove('on'));document.getElementById('cwdiv').classList.add('on');});
-document.getElementById('ci').addEventListener('change',e=>{col=e.target.value;});
 
 // CSS Cube
 const cubeEl=document.getElementById('cube');
-function updateCube(){cubeEl.style.transform=`rotateX(${(sP-Math.PI/2)*180/Math.PI}deg) rotateY(${-sT*180/Math.PI}deg)`;}
+function updateCube(){cubeEl.style.transform=`rotateX(${(camPhi-Math.PI/2)*180/Math.PI}deg) rotateY(${-camTheta*180/Math.PI}deg)`;}
 updateCube();
-let cd=false,cl=null;
+let cd=false,clp=null;
 const nc=document.getElementById('navcube');
-nc.addEventListener('pointerdown',e=>{e.stopPropagation();cd=true;cl={x:e.clientX,y:e.clientY};nc.setPointerCapture(e.pointerId);});
-nc.addEventListener('pointermove',e=>{if(!cd)return;applyOrbit(e.clientX-cl.x,e.clientY-cl.y,0.012);cl={x:e.clientX,y:e.clientY};offDirty=true;schedRender();});
+nc.addEventListener('pointerdown',e=>{e.stopPropagation();cd=true;clp={x:e.clientX,y:e.clientY};nc.setPointerCapture(e.pointerId);});
+nc.addEventListener('pointermove',e=>{if(!cd)return;applyOrbit(e.clientX-clp.x,e.clientY-clp.y,0.012);clp={x:e.clientX,y:e.clientY};glDirty=true;schedGL();});
 nc.addEventListener('pointerup',()=>{cd=false;});
 const SNAPS={fr:[0,Math.PI/2],bk:[Math.PI,Math.PI/2],ri:[-Math.PI/2,Math.PI/2],le:[Math.PI/2,Math.PI/2],tp:[-0.42,0.25],bt:[-0.42,Math.PI-0.25]};
 document.querySelectorAll('.fc').forEach(f=>{
-  f.addEventListener('click',e=>{e.stopPropagation();const s=SNAPS[f.dataset.s];if(s){sT=s[0];sP=s[1];updateCube();offDirty=true;schedRender();}});
+  f.addEventListener('click',e=>{e.stopPropagation();const s=SNAPS[f.dataset.s];if(s){camTheta=s[0];camPhi=s[1];updateCube();glDirty=true;schedGL();}});
 });
 
-render();
+// Startup
+resize();
+window.addEventListener('resize',()=>resize());
+schedGL();
 </script>
 </body>
 </html>
